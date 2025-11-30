@@ -9,11 +9,17 @@ from datetime import datetime
 from core.base_realm import SpatialRealm
 from core.spatial_engine import SpatialEngine, BeamNetworkProtocol
 
+try:
+    import pygame
+    PYGAME_AVAILABLE = True
+except ImportError:
+    PYGAME_AVAILABLE = False
+
 
 class SecurityRealm(SpatialRealm):
     """Security, surveillance, and access control realm"""
 
-    def __init__(self):
+    def __init__(self, standalone=False):
         super().__init__(
             realm_name="Security & Surveillance Realm",
             realm_description="Perimeter Defense, Access Control, Threat Detection"
@@ -23,6 +29,8 @@ class SecurityRealm(SpatialRealm):
         self.security_zones = []
         self.access_points = []
         self.detected_threats = []
+        self.screen = None
+        self.standalone = standalone
 
     def initialize(self) -> bool:
         """Initialize security systems"""
@@ -133,3 +141,44 @@ class SecurityRealm(SpatialRealm):
             "occupancy": random.randint(0, 10),
             "last_scan": datetime.now()
         }
+
+    def __init__(self, standalone=False):
+        super().__init__(
+            realm_name="Security & Surveillance Realm",
+            realm_description="Perimeter Defense, Access Control, Threat Detection"
+        )
+        self.spatial_engine = SpatialEngine()
+        self.beam_network = BeamNetworkProtocol()
+        self.security_zones = []
+        self.access_points = []
+        self.detected_threats = []
+        self.screen = None
+        self.standalone = standalone
+
+    def run(self, duration=10):
+        """Run pygame visual demo"""
+        if not hasattr(self, 'screen') or not self.screen:
+            self.run_demo_cycle()
+            return
+        
+        try:
+            import pygame
+            start_time = time.time()
+            clock = pygame.time.Clock()
+            BG, WHITE, ACCENT = (10, 20, 35), (255, 255, 255), (100, 200, 255)
+            title_font = pygame.font.Font(None, 84)
+            small_font = pygame.font.Font(None, 28)
+            
+            while time.time() - start_time < duration:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
+                        return
+                self.screen.fill(BG)
+                title = title_font.render("🛡️  SECURITY REALM", True, WHITE)
+                self.screen.blit(title, (50, 50))
+                text = small_font.render(f"Multi-zone Surveillance · Access Control · {int(duration - (time.time() - start_time))}s", True, ACCENT)
+                self.screen.blit(text, (50, 950))
+                pygame.display.flip()
+                clock.tick(30)
+        except:
+            self.run_demo_cycle()

@@ -9,11 +9,17 @@ from datetime import datetime
 from core.base_realm import SpatialRealm
 from core.spatial_engine import SpatialEngine, BeamNetworkProtocol
 
+try:
+    import pygame
+    PYGAME_AVAILABLE = True
+except ImportError:
+    PYGAME_AVAILABLE = False
+
 
 class MaritimeRealm(SpatialRealm):
     """Maritime navigation and port operations realm"""
 
-    def __init__(self):
+    def __init__(self, standalone=False):
         super().__init__(
             realm_name="Maritime Operations Realm",
             realm_description="Vessel Navigation, Port Operations, Marine Safety"
@@ -158,3 +164,44 @@ class MaritimeRealm(SpatialRealm):
             "course": random.randint(0, 359),
             "speed": random.uniform(0, 15)
         }
+
+    def run(self, duration=10):
+        """Run pygame visual demo for specified duration"""
+        if not PYGAME_AVAILABLE or not self.screen:
+            self.run_demo_cycle()
+            return
+
+        start_time = time.time()
+        clock = pygame.time.Clock()
+
+        # Colors
+        BG = (10, 25, 40)
+        WHITE = (255, 255, 255)
+        ACCENT = (100, 200, 200)
+
+        try:
+            title_font = pygame.font.Font(None, 84)
+            subtitle_font = pygame.font.Font(None, 48)
+            small_font = pygame.font.Font(None, 28)
+        except:
+            title_font = pygame.font.SysFont('arial', 84, bold=True)
+            subtitle_font = pygame.font.SysFont('arial', 48)
+            small_font = pygame.font.SysFont('arial', 28)
+
+        while time.time() - start_time < duration:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    return
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                    return
+
+            self.screen.fill(BG)
+            title = title_font.render("⚓ MARITIME REALM", True, WHITE)
+            self.screen.blit(title, (50, 50))
+            subtitle = subtitle_font.render("Vessel Navigation · Port Ops · Marine Safety", True, ACCENT)
+            self.screen.blit(subtitle, (50, 150))
+            footer = small_font.render(f"Maritime Active · {int(duration - (time.time() - start_time))}s", True, ACCENT)
+            self.screen.blit(footer, (50, 950))
+            pygame.display.flip()
+            clock.tick(30)
+
