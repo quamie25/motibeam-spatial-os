@@ -141,30 +141,20 @@ class EmergencyRealm(SpatialRealm):
         }
 
     def run(self, duration=10):
-        """Run pygame visual demo for specified duration"""
+        """Run pygame visual demo with HUD theme"""
         if not PYGAME_AVAILABLE or not self.screen:
             self.run_demo_cycle()
             return
 
+        from core.design_tokens import (
+            get_fonts, draw_animated_background, draw_header_bar,
+            draw_footer_hud, draw_content_card, REALM_COLORS
+        )
+
         start_time = time.time()
         clock = pygame.time.Clock()
-
-        # Colors
-        BG = (30, 10, 10)
-        WHITE = (255, 255, 255)
-        ACCENT = (255, 100, 100)
-        CRITICAL = (255, 50, 50)
-
-        try:
-            title_font = pygame.font.Font(None, 84)
-            subtitle_font = pygame.font.Font(None, 48)
-            text_font = pygame.font.Font(None, 36)
-            small_font = pygame.font.Font(None, 28)
-        except:
-            title_font = pygame.font.SysFont('arial', 84, bold=True)
-            subtitle_font = pygame.font.SysFont('arial', 48)
-            text_font = pygame.font.SysFont('arial', 36)
-            small_font = pygame.font.SysFont('arial', 28)
+        accent_color = REALM_COLORS.get('emergency', (255, 80, 100))
+        fonts = get_fonts(self.screen)
 
         while time.time() - start_time < duration:
             for event in pygame.event.get():
@@ -173,70 +163,60 @@ class EmergencyRealm(SpatialRealm):
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                     return
 
-            self.screen.fill(BG)
             elapsed = time.time() - start_time
+            remaining = int(duration - elapsed)
 
-            # Title
-            title = title_font.render("🚨 EMERGENCY RESPONSE", True, WHITE)
-            self.screen.blit(title, (50, 50))
+            draw_animated_background(self.screen, elapsed)
+            draw_header_bar(
+                self.screen, fonts, "🚨", "EMERGENCY RESPONSE",
+                "911 Dispatch · Crisis Management · Medical AI",
+                accent_color, "CRITICAL"
+            )
 
-            subtitle = subtitle_font.render("911 Dispatch · Crisis Management · Medical AI", True, ACCENT)
-            self.screen.blit(subtitle, (50, 150))
-
-            # Content based on elapsed time
-            y = 250
-
-            if elapsed < 3:
-                section = text_font.render("INCOMING 911 CALL", True, CRITICAL)
-                self.screen.blit(section, (50, y))
-                y += 60
-
-                items = [
-                    "📞 Elderly male, chest pain",
-                    "📍 Boston, MA (42.3601° N)",
-                    "🎯 Priority: CRITICAL - Cardiac event",
-                    "📊 AI Confidence: 94%"
-                ]
-                for item in items:
-                    text = small_font.render(item, True, WHITE)
-                    self.screen.blit(text, (80, y))
-                    y += 45
-
-            elif elapsed < 6:
-                section = text_font.render("RESOURCE ALLOCATION", True, ACCENT)
-                self.screen.blit(section, (50, y))
-                y += 60
-
-                items = [
-                    "🚑 AMB-01 dispatched (ETA: 3m 45s)",
-                    "🚒 FIRE-02 backup (ETA: 4m 12s)",
-                    "📡 AR navigation → responders",
-                    "✓ Building access codes sent"
-                ]
-                for item in items:
-                    text = small_font.render(item, True, WHITE)
-                    self.screen.blit(text, (80, y))
-                    y += 45
-
+            # Time-based content sections
+            if elapsed < duration / 3:
+                draw_content_card(
+                    self.screen, fonts, "INCOMING 911 CALL",
+                    [
+                        "📞 Elderly male, chest pain, difficulty breathing",
+                        "📍 Location: Boston, MA (42.3601° N, 71.0589° W)",
+                        "🎯 Priority: CRITICAL - Suspected cardiac event",
+                        "📊 AI Triage Confidence: 94%"
+                    ],
+                    280, accent_color
+                )
+            elif elapsed < duration * 2 / 3:
+                draw_content_card(
+                    self.screen, fonts, "RESOURCE ALLOCATION",
+                    [
+                        "🚑 AMB-01 dispatched (ETA: 3m 45s) - Priority 1",
+                        "🚒 FIRE-02 backup support (ETA: 4m 12s)",
+                        "📡 AR navigation overlay → responder HUD",
+                        "🏥 Patient vitals streaming to paramedics",
+                        "✓ Building access codes transmitted"
+                    ],
+                    280, accent_color
+                )
             else:
-                section = text_font.render("INCIDENT RESOLUTION", True, ACCENT)
-                self.screen.blit(section, (50, y))
-                y += 60
+                draw_content_card(
+                    self.screen, fonts, "INCIDENT RESOLUTION",
+                    [
+                        "✓ Paramedics arrived: 3m 28s (ahead of ETA)",
+                        "✓ Patient stabilized on-scene",
+                        "✓ En route to Mass General Hospital",
+                        "✓ Family members notified automatically",
+                        "✓ Incident logged for system improvement"
+                    ],
+                    280, accent_color
+                )
 
-                items = [
-                    "✓ Paramedics arrived: 3m 28s",
-                    "✓ Patient stabilized on-scene",
-                    "✓ En route to hospital",
-                    "✓ Incident logged for AI learning"
-                ]
-                for item in items:
-                    text = small_font.render(item, True, WHITE)
-                    self.screen.blit(text, (80, y))
-                    y += 45
-
-            # Footer
-            footer = small_font.render(f"Emergency Units Ready · Real-time Coordination · {int(duration - elapsed)}s", True, ACCENT)
-            self.screen.blit(footer, (50, 950))
+            draw_footer_hud(
+                self.screen, fonts,
+                "Emergency Response · Operations Realm",
+                f"Units Ready: 3 | Active: {remaining}s",
+                "Real-time Coordination",
+                accent_color
+            )
 
             pygame.display.flip()
             clock.tick(30)

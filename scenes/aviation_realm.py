@@ -150,27 +150,20 @@ class AviationRealm(SpatialRealm):
         }
 
     def run(self, duration=10):
-        """Run pygame visual demo for specified duration"""
+        """Run pygame visual demo with HUD theme"""
         if not PYGAME_AVAILABLE or not self.screen:
             self.run_demo_cycle()
             return
 
+        from core.design_tokens import (
+            get_fonts, draw_animated_background, draw_header_bar,
+            draw_footer_hud, draw_content_card, REALM_COLORS
+        )
+
         start_time = time.time()
         clock = pygame.time.Clock()
-
-        # Colors
-        BG = (10, 20, 40)
-        WHITE = (255, 255, 255)
-        ACCENT = (100, 180, 255)
-
-        try:
-            title_font = pygame.font.Font(None, 84)
-            subtitle_font = pygame.font.Font(None, 48)
-            small_font = pygame.font.Font(None, 28)
-        except:
-            title_font = pygame.font.SysFont('arial', 84, bold=True)
-            subtitle_font = pygame.font.SysFont('arial', 48)
-            small_font = pygame.font.SysFont('arial', 28)
+        accent_color = REALM_COLORS.get('aviation', (100, 200, 255))
+        fonts = get_fonts(self.screen)
 
         while time.time() - start_time < duration:
             for event in pygame.event.get():
@@ -179,13 +172,62 @@ class AviationRealm(SpatialRealm):
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                     return
 
-            self.screen.fill(BG)
-            title = title_font.render("✈️  AVIATION REALM", True, WHITE)
-            self.screen.blit(title, (50, 50))
-            subtitle = subtitle_font.render("ATC · Flight Safety · Navigation AI", True, ACCENT)
-            self.screen.blit(subtitle, (50, 150))
-            footer = small_font.render(f"Aviation Active · {int(duration - (time.time() - start_time))}s", True, ACCENT)
-            self.screen.blit(footer, (50, 950))
+            elapsed = time.time() - start_time
+            remaining = int(duration - elapsed)
+
+            draw_animated_background(self.screen, elapsed)
+            draw_header_bar(
+                self.screen, fonts, "✈️", "AVIATION CONTROL",
+                "Air Traffic Control · Flight Safety · Navigation AI",
+                accent_color, "OPERATIONAL"
+            )
+
+            # Time-based content sections
+            if elapsed < duration / 3:
+                draw_content_card(
+                    self.screen, fonts, "AIR TRAFFIC CONTROL",
+                    [
+                        "🛫 Active flights: 127 in sector",
+                        "📍 Airspace: Boston ARTCC (Class A)",
+                        "✈️ UAL2847: B777 @ FL350, 485kts",
+                        "✈️ DAL1523: A320 @ FL280, 420kts",
+                        "🌤️ Weather: CAVOK (Clear and visibility OK)"
+                    ],
+                    280, accent_color
+                )
+            elif elapsed < duration * 2 / 3:
+                draw_content_card(
+                    self.screen, fonts, "COLLISION AVOIDANCE ALERT",
+                    [
+                        "⚠️ Conflict: UAL2847 & DAL1523",
+                        "📊 Proximity: 4.2 nm horizontal, 1,500 ft vertical",
+                        "⏱️ Time to conflict: 3 minutes 15 seconds",
+                        "🎯 UAL2847: Climb to FL370 (from FL350)",
+                        "✓ Commands transmitted - Conflict resolved"
+                    ],
+                    280, accent_color
+                )
+            else:
+                draw_content_card(
+                    self.screen, fonts, "AR COCKPIT INTEGRATION",
+                    [
+                        "🔮 Holographic traffic display: ACTIVE",
+                        "🌦️ Real-time weather overlay rendered",
+                        "🗻 Terrain awareness: ENHANCED",
+                        "🛬 3D runway approach guidance active",
+                        "✓ Flight path optimized - 14min saved, 1,200lbs fuel"
+                    ],
+                    280, accent_color
+                )
+
+            draw_footer_hud(
+                self.screen, fonts,
+                "Aviation Control · Operations Realm",
+                f"Flights: 127 | Active: {remaining}s",
+                "Safe Skies Guaranteed",
+                accent_color
+            )
+
             pygame.display.flip()
             clock.tick(30)
 
