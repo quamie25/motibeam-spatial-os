@@ -1,0 +1,4 @@
+# MotiBeam Spatial OS Dependencies
+
+# Terminal UI rendering for neon-style HUD displays
+rich>=13.0.0
