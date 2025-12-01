@@ -103,7 +103,7 @@ class TransportRealm(SpatialRealm):
         clock = pygame.time.Clock()
         accent_color = REALM_COLORS.get('transport', (100, 180, 255))
         fonts = get_fonts(self.screen)
-        w, h = screen.get_size()
+        w, h = self.screen.get_size()
 
         # Driving scenarios that cycle
         scenarios = [

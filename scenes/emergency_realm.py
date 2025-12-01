@@ -264,11 +264,10 @@ class EmergencyRealm(SpatialRealm):
 
             # Draw header
             draw_header(
-                screen, fonts,
-                realm_title="[E] EMERGENCY RESPONSE",
-                subtitle="911 Dispatch · Crisis Management · Medical AI",
-                accent_color=accent_color,
-                show_live=True
+                screen, fonts, 'emergency',
+                '[E] EMERGENCY RESPONSE',
+                '911 Dispatch · Crisis Management · Medical AI',
+                accent_color, "● LIVE"
             )
 
             # === MIDDLE BAND: Two-column critical info ===
