@@ -11,15 +11,15 @@ from core.global_state import GlobalState
 
 # Import all realms (will be added incrementally)
 REALMS = [
-    {"name": "Home", "icon": "🏡", "module": "scenes.home_realm", "class": "HomeRealm"},
-    {"name": "Clinical", "icon": "⚕️", "module": "scenes.clinical_realm", "class": "ClinicalRealm"},
-    {"name": "Education", "icon": "📚", "module": "scenes.education_realm", "class": "EducationRealm"},
-    {"name": "Transport", "icon": "🚗", "module": "scenes.transport_realm", "class": "TransportRealm"},
-    {"name": "Emergency", "icon": "🚨", "module": "scenes.emergency_realm", "class": "EmergencyRealm"},
-    {"name": "Security", "icon": "🛡️", "module": "scenes.security_realm", "class": "SecurityRealm"},
-    {"name": "Enterprise", "icon": "🏢", "module": "scenes.enterprise_realm", "class": "EnterpriseRealm"},
-    {"name": "Aviation", "icon": "✈️", "module": "scenes.aviation_realm", "class": "AviationRealm"},
-    {"name": "Maritime", "icon": "⚓", "module": "scenes.maritime_realm", "class": "MaritimeRealm"},
+    {"id": "home",      "name": "Home",      "icon": "🏡", "module": "scenes.home_realm",      "class": "HomeRealm"},
+    {"id": "clinical",  "name": "Clinical",  "icon": "⚕️", "module": "scenes.clinical_realm",  "class": "ClinicalRealm"},
+    {"id": "education", "name": "Education", "icon": "📚", "module": "scenes.education_realm", "class": "EducationRealm"},
+    {"id": "transport", "name": "Transport", "icon": "🚗", "module": "scenes.transport_realm", "class": "TransportRealm"},
+    {"id": "emergency", "name": "Emergency", "icon": "🚨", "module": "scenes.emergency_realm", "class": "EmergencyRealm"},
+    {"id": "security",  "name": "Security",  "icon": "🛡️", "module": "scenes.security_realm",  "class": "SecurityRealm"},
+    {"id": "enterprise","name": "Enterprise","icon": "🏢", "module": "scenes.enterprise_realm", "class": "EnterpriseRealm"},
+    {"id": "aviation",  "name": "Aviation",  "icon": "✈️", "module": "scenes.aviation_realm",  "class": "AviationRealm"},
+    {"id": "maritime",  "name": "Maritime",  "icon": "⚓", "module": "scenes.maritime_realm",  "class": "MaritimeRealm"},
 ]
 
 
@@ -83,9 +83,12 @@ class RealmLauncher:
                     elif event.key == pygame.K_f:
                         self.global_state.toggle_fullscreen()
                         if self.global_state.fullscreen:
-                            self.screen = pygame.display.set_mode((self.screen_width, self.screen_height),
-                                                                  pygame.FULLSCREEN)
+                            self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+                            self.screen_width = self.screen.get_width()
+                            self.screen_height = self.screen.get_height()
                         else:
+                            self.screen_width = 1920
+                            self.screen_height = 1080
                             self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
 
                     elif event.key in [pygame.K_UP, pygame.K_w]:
@@ -134,14 +137,16 @@ class RealmLauncher:
         subtitle_x = (self.screen_width - subtitle_surf.get_width()) // 2
         self.screen.blit(subtitle_surf, (subtitle_x, 150))
 
-        # 3x3 grid
-        grid_start_y = 250
-        tile_width = 500
-        tile_height = 220
-        gap = 40
+        # 3x3 grid - centered vertically and with more spacing
+        tile_width = 480
+        tile_height = 240
+        gap = 60
 
         total_grid_width = (tile_width * 3) + (gap * 2)
+        total_grid_height = (tile_height * 3) + (gap * 2)
+
         grid_start_x = (self.screen_width - total_grid_width) // 2
+        grid_start_y = 200 + (self.screen_height - 200 - 100 - total_grid_height) // 2
 
         for row in range(self.grid_rows):
             for col in range(self.grid_cols):
@@ -160,40 +165,47 @@ class RealmLauncher:
         self.screen.blit(controls_surf, (controls_x, self.screen_height - 60))
 
     def draw_realm_tile(self, x: int, y: int, width: int, height: int, realm_info: dict, selected: bool):
-        """Draw a single realm tile."""
+        """Draw a single realm tile with enhanced visuals."""
         brightness = self.global_state.get_brightness_multiplier()
 
-        # Border and background
+        # Border and background - brighter selection
         if selected:
-            border_color = tuple(int(c * brightness) for c in self.theme.colors['primary'])
-            bg_color = tuple(int(c * brightness * 0.2) for c in self.theme.colors['panel_bg'])
-            border_width = 4
+            # Bright glowing selection
+            border_color = tuple(min(255, int(c * brightness * 1.5)) for c in self.theme.colors['primary'])
+            bg_color = tuple(int(c * brightness * 0.3) for c in self.theme.colors['panel_bg'])
+            border_width = 5
+
+            # Draw glow effect for selected tile
+            glow_rect = pygame.Rect(x - 4, y - 4, width + 8, height + 8)
+            glow_color = tuple(int(c * brightness * 0.4) for c in self.theme.colors['primary'])
+            pygame.draw.rect(self.screen, glow_color, glow_rect, 2)
         else:
-            border_color = tuple(int(c * brightness * 0.5) for c in self.theme.colors['border'])
-            bg_color = tuple(int(c * brightness * 0.1) for c in self.theme.colors['panel_bg'])
+            border_color = tuple(int(c * brightness * 0.4) for c in self.theme.colors['border'])
+            bg_color = tuple(int(c * brightness * 0.08) for c in self.theme.colors['panel_bg'])
             border_width = 2
 
         tile_rect = pygame.Rect(x, y, width, height)
         pygame.draw.rect(self.screen, bg_color, tile_rect)
         pygame.draw.rect(self.screen, border_color, tile_rect, border_width)
 
-        # Icon (big)
+        # Icon (larger and centered)
         icon_text = realm_info["icon"]
         try:
+            # Use huge font for icons
+            icon_font = pygame.font.Font(pygame.font.match_font('monospace', bold=True), 100)
+        except:
             icon_font = self.theme.fonts['huge']
-        except KeyError:
-            icon_font = self.theme.fonts['title']
 
         text_color = tuple(int(c * brightness) for c in self.theme.colors['text'])
         icon_surf = icon_font.render(icon_text, True, text_color)
         icon_x = x + (width - icon_surf.get_width()) // 2
-        icon_y = y + 40
+        icon_y = y + 50
         self.screen.blit(icon_surf, (icon_x, icon_y))
 
-        # Name
+        # Name (larger font)
         name_surf = self.theme.fonts['panel_title'].render(realm_info["name"], True, text_color)
         name_x = x + (width - name_surf.get_width()) // 2
-        name_y = y + height - 60
+        name_y = y + height - 50
         self.screen.blit(name_surf, (name_x, name_y))
 
     def launch_selected_realm(self):
