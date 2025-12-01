@@ -9,11 +9,7 @@ from datetime import datetime
 from core.base_realm import SpatialRealm
 from core.spatial_engine import SpatialEngine, BeamNetworkProtocol
 
-try:
-    import pygame
-    PYGAME_AVAILABLE = True
-except ImportError:
-    PYGAME_AVAILABLE = False
+import pygame
 
 
 class MaritimeRealm(SpatialRealm):
@@ -165,85 +161,72 @@ class MaritimeRealm(SpatialRealm):
             "speed": random.uniform(0, 15)
         }
 
-    def run(self, duration=10):
-        """Run pygame visual demo with HUD theme"""
-        if not PYGAME_AVAILABLE or not self.screen:
+    def run(self, duration=15):
+        """Run pygame visual demo with unified Neon HUD theme"""
+        if not self.screen:
             self.run_demo_cycle()
             return
 
-        from core.design_tokens import (
-            get_fonts, draw_animated_background, draw_header_bar,
-            draw_footer_hud, draw_content_card, REALM_COLORS
-        )
+        from scenes.theme_neon import render_realm_hud
 
         start_time = time.time()
         clock = pygame.time.Clock()
-        accent_color = REALM_COLORS.get('maritime', (100, 220, 255))
-        fonts = get_fonts(self.screen)
+
+        # Define content sections that rotate over time
+        content_sections = [
+            {
+                'title': 'PORT OPERATIONS CENTER',
+                'items': [
+                    "Location: Port of Boston",
+                    "Active vessels: 42 tracked",
+                    "Berths occupied: 12/18 available",
+                    "MSC MARINA: Container (366m) - Inbound",
+                    "CARNIVAL GLORY: Cruise (290m) - Docked"
+                ]
+            },
+            {
+                'title': 'COLLISION AVOIDANCE ACTIVE',
+                'items': [
+                    "Potential crossing: MSC MARINA & NORDIC AURORA",
+                    "CPA: 0.4 nm in 8 minutes (UNSAFE)",
+                    "MSC MARINA: Maintain course and speed",
+                    "NORDIC AURORA: Alter 15 degrees starboard",
+                    "New CPA: 1.2 nm (SAFE) - VHF advisory sent"
+                ]
+            },
+            {
+                'title': 'AR BRIDGE INTEGRATION',
+                'items': [
+                    "360 degree holographic navigation: ACTIVE",
+                    "Traffic targets rendered in 3D space",
+                    "Depth contours and weather visualized",
+                    "Optimal weather routing: 8.2 tons fuel saved",
+                    "Automated port ops: 16hr turnaround"
+                ]
+            }
+        ]
 
         while time.time() - start_time < duration:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     return
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                    return
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE or event.key == pygame.K_q:
+                        return
 
             elapsed = time.time() - start_time
-            remaining = int(duration - elapsed)
 
-            draw_animated_background(self.screen, elapsed)
-            draw_header_bar(
-                self.screen, fonts, "⚓", "MARITIME OPERATIONS",
-                "Vessel Navigation · Port Operations · Marine Safety",
-                accent_color, "OPERATIONAL"
+            render_realm_hud(
+                screen=self.screen,
+                realm_id='maritime',
+                title='MARITIME OPERATIONS',
+                subtitle='Vessel Navigation · Port Operations · Marine Safety',
+                mode='Ops Mode',
+                content_sections=content_sections,
+                elapsed=elapsed,
+                duration=duration
             )
 
-            # Time-based content sections
-            if elapsed < duration / 3:
-                draw_content_card(
-                    self.screen, fonts, "PORT OPERATIONS CENTER",
-                    [
-                        "🌊 Location: Port of Boston",
-                        "🚢 Active vessels: 42 tracked",
-                        "⚓ Berths occupied: 12/18 available",
-                        "🌊 MSC MARINA: Container (366m) - Inbound",
-                        "🛳️ CARNIVAL GLORY: Cruise (290m) - Docked"
-                    ],
-                    280, accent_color
-                )
-            elif elapsed < duration * 2 / 3:
-                draw_content_card(
-                    self.screen, fonts, "COLLISION AVOIDANCE ACTIVE",
-                    [
-                        "⚠️ Potential crossing: MSC MARINA & NORDIC AURORA",
-                        "📊 CPA: 0.4 nm in 8 minutes (UNSAFE)",
-                        "🎯 MSC MARINA: Maintain course and speed",
-                        "🎯 NORDIC AURORA: Alter 15° starboard",
-                        "✓ New CPA: 1.2 nm (SAFE) - VHF advisory sent"
-                    ],
-                    280, accent_color
-                )
-            else:
-                draw_content_card(
-                    self.screen, fonts, "AR BRIDGE INTEGRATION",
-                    [
-                        "🔮 360° holographic navigation: ACTIVE",
-                        "🗺️ Traffic targets rendered in 3D space",
-                        "📊 Depth contours and weather visualized",
-                        "🌦️ Optimal weather routing: 8.2 tons fuel saved",
-                        "✓ Automated port ops: 16hr turnaround"
-                    ],
-                    280, accent_color
-                )
-
-            draw_footer_hud(
-                self.screen, fonts,
-                "Maritime Operations · Operations Realm",
-                f"Vessels: 42 | Active: {remaining}s",
-                "Safe Seas Guaranteed",
-                accent_color
-            )
-
-            pygame.display.flip()
             clock.tick(30)
+
 

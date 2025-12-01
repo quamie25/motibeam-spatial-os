@@ -9,11 +9,7 @@ from datetime import datetime
 from core.base_realm import SpatialRealm
 from core.spatial_engine import SpatialEngine, BeamNetworkProtocol
 
-try:
-    import pygame
-    PYGAME_AVAILABLE = True
-except ImportError:
-    PYGAME_AVAILABLE = False
+import pygame
 
 
 class TransportRealm(SpatialRealm):
@@ -91,106 +87,72 @@ class TransportRealm(SpatialRealm):
         print("  Supercharger nearby: 0.8 miles")
         print("  ✓ Route optimized for battery range")
 
-    def run(self, duration=10):
-        """Run pygame visual demo for specified duration"""
-        if not PYGAME_AVAILABLE or not self.screen:
+    def run(self, duration=15):
+        """Run pygame visual demo with unified Neon HUD theme"""
+        if not self.screen:
             self.run_demo_cycle()
             return
+
+        from scenes.theme_neon import render_realm_hud
 
         start_time = time.time()
         clock = pygame.time.Clock()
 
-        # Colors
-        BG = (10, 15, 25)
-        WHITE = (255, 255, 255)
-        ACCENT = (100, 255, 200)
-        BLUE = (100, 150, 255)
-        WARNING = (255, 200, 100)
-
-        try:
-            title_font = pygame.font.Font(None, 84)
-            subtitle_font = pygame.font.Font(None, 48)
-            text_font = pygame.font.Font(None, 36)
-            small_font = pygame.font.Font(None, 28)
-        except:
-            title_font = pygame.font.SysFont('arial', 84, bold=True)
-            subtitle_font = pygame.font.SysFont('arial', 48)
-            text_font = pygame.font.SysFont('arial', 36)
-            small_font = pygame.font.SysFont('arial', 28)
+        # Define content sections that rotate over time
+        content_sections = [
+            {
+                'title': 'AR NAVIGATION HUD',
+                'items': [
+                    "Destination: 123 Main St, Boston MA",
+                    "Distance: 12.3 miles",
+                    "ETA: 18 minutes (optimal route)",
+                    "AR arrows overlaid on windshield",
+                    "Lane guidance: Keep right, exit in 2 miles"
+                ]
+            },
+            {
+                'title': 'INTELLIGENT SAFETY SYSTEMS',
+                'items': [
+                    "Forward collision: Clear",
+                    "Blind spot left: Vehicle detected",
+                    "Blind spot right: Clear",
+                    "Pedestrian ahead detected, reducing speed",
+                    "Auto-brake engaged: 55 to 30 mph"
+                ]
+            },
+            {
+                'title': 'PREDICTIVE TRAFFIC AI',
+                'items': [
+                    "Accident detected on Route 93",
+                    "Impact: +12 minute delay",
+                    "Alternate route calculated (via I-90)",
+                    "New ETA: 19 minutes (saves 11 min)",
+                    "Battery: 87% (240 miles range)"
+                ]
+            }
+        ]
 
         while time.time() - start_time < duration:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     return
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                    return
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE or event.key == pygame.K_q:
+                        return
 
-            self.screen.fill(BG)
             elapsed = time.time() - start_time
 
-            # Title
-            title = title_font.render("🚗 TRANSPORT REALM", True, WHITE)
-            self.screen.blit(title, (50, 50))
+            render_realm_hud(
+                screen=self.screen,
+                realm_id='transport',
+                title='TRANSPORT REALM',
+                subtitle='Automotive HUD · Navigation · Driver Assistance',
+                mode='Consumer Mode',
+                content_sections=content_sections,
+                elapsed=elapsed,
+                duration=duration
+            )
 
-            subtitle = subtitle_font.render("Automotive HUD · Navigation · Driver AI", True, ACCENT)
-            self.screen.blit(subtitle, (50, 150))
-
-            # Content based on elapsed time
-            y = 250
-
-            if elapsed < 3:
-                section = text_font.render("AR NAVIGATION HUD", True, BLUE)
-                self.screen.blit(section, (50, y))
-                y += 60
-
-                items = [
-                    "🗺️  Destination: 123 Main St, Boston",
-                    "📍 Distance: 12.3 miles",
-                    "⏱️  ETA: 18 minutes",
-                    "✓ AR arrows on windshield active"
-                ]
-                for item in items:
-                    text = small_font.render(item, True, WHITE)
-                    self.screen.blit(text, (80, y))
-                    y += 45
-
-            elif elapsed < 6:
-                section = text_font.render("INTELLIGENT SAFETY SYSTEMS", True, WARNING)
-                self.screen.blit(section, (50, y))
-                y += 60
-
-                items = [
-                    "✓ Forward collision: Clear",
-                    "⚠️  Blind spot left: Vehicle detected",
-                    "✓ Pedestrian detection: Active",
-                    "🛡️  Auto-brake ready (55 mph)"
-                ]
-                for item in items:
-                    text = small_font.render(item, True, WHITE)
-                    self.screen.blit(text, (80, y))
-                    y += 45
-
-            else:
-                section = text_font.render("PREDICTIVE TRAFFIC AI", True, ACCENT)
-                self.screen.blit(section, (50, y))
-                y += 60
-
-                items = [
-                    "🚧 Accident detected on Route 93",
-                    "📊 Impact: +12 min delay avoided",
-                    "✓ Alternate route via I-90",
-                    "🔋 Battery: 87% (240 mi range)"
-                ]
-                for item in items:
-                    text = small_font.render(item, True, WHITE)
-                    self.screen.blit(text, (80, y))
-                    y += 45
-
-            # Footer
-            footer = small_font.render(f"Autopilot: Engaged · Speed: 55 mph · {int(duration - elapsed)}s", True, ACCENT)
-            self.screen.blit(footer, (50, 950))
-
-            pygame.display.flip()
             clock.tick(30)
 
     def get_status(self) -> dict:

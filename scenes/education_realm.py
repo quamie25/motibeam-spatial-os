@@ -9,11 +9,7 @@ from datetime import datetime
 from core.base_realm import SpatialRealm
 from core.spatial_engine import SpatialEngine, BeamNetworkProtocol
 
-try:
-    import pygame
-    PYGAME_AVAILABLE = True
-except ImportError:
-    PYGAME_AVAILABLE = False
+import pygame
 
 
 class EducationRealm(SpatialRealm):
@@ -93,106 +89,72 @@ class EducationRealm(SpatialRealm):
         print("  ✓ Shared AR whiteboard prepared")
         print("  ✓ Study materials synchronized")
 
-    def run(self, duration=10):
-        """Run pygame visual demo for specified duration"""
-        if not PYGAME_AVAILABLE or not self.screen:
+    def run(self, duration=15):
+        """Run pygame visual demo with unified Neon HUD theme"""
+        if not self.screen:
             self.run_demo_cycle()
             return
+
+        from scenes.theme_neon import render_realm_hud
 
         start_time = time.time()
         clock = pygame.time.Clock()
 
-        # Colors
-        BG = (25, 20, 40)
-        WHITE = (255, 255, 255)
-        ACCENT = (180, 150, 255)
-        LEARN = (120, 200, 255)
-        PROGRESS = (150, 255, 150)
-
-        try:
-            title_font = pygame.font.Font(None, 84)
-            subtitle_font = pygame.font.Font(None, 48)
-            text_font = pygame.font.Font(None, 36)
-            small_font = pygame.font.Font(None, 28)
-        except:
-            title_font = pygame.font.SysFont('arial', 84, bold=True)
-            subtitle_font = pygame.font.SysFont('arial', 48)
-            text_font = pygame.font.SysFont('arial', 36)
-            small_font = pygame.font.SysFont('arial', 28)
+        # Define content sections that rotate over time
+        content_sections = [
+            {
+                'title': 'ADAPTIVE LEARNING SESSION',
+                'items': [
+                    "Student: Alex (Studying Calculus)",
+                    "Current topic: Integration by parts",
+                    "Comprehension level: 73%",
+                    "Difficulty adjusted: Medium to Advanced",
+                    "Recommended: 3 practice problems"
+                ]
+            },
+            {
+                'title': 'FOCUS & ATTENTION MANAGEMENT',
+                'items': [
+                    "Lighting: Adjusted to focus mode",
+                    "Audio: Noise cancellation active",
+                    "Distractions: 12 notifications silenced",
+                    "Pomodoro timer: 22 minutes remaining",
+                    "Focus score: 88/100"
+                ]
+            },
+            {
+                'title': 'LEARNING ANALYTICS & INSIGHTS',
+                'items': [
+                    "Differential equations: 92% mastery",
+                    "Linear algebra: 88% mastery",
+                    "Integration techniques: 65% (practice needed)",
+                    "Personalized practice set generated",
+                    "Study group suggested: 3:00 PM today"
+                ]
+            }
+        ]
 
         while time.time() - start_time < duration:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     return
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                    return
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE or event.key == pygame.K_q:
+                        return
 
-            self.screen.fill(BG)
             elapsed = time.time() - start_time
 
-            # Title
-            title = title_font.render("📚 EDUCATION REALM", True, WHITE)
-            self.screen.blit(title, (50, 50))
+            render_realm_hud(
+                screen=self.screen,
+                realm_id='education',
+                title='EDUCATION REALM',
+                subtitle='Learning · Study Focus · Knowledge Management',
+                mode='Consumer Mode',
+                content_sections=content_sections,
+                elapsed=elapsed,
+                duration=duration
+            )
 
-            subtitle = subtitle_font.render("Adaptive Learning · Focus · Knowledge AI", True, ACCENT)
-            self.screen.blit(subtitle, (50, 150))
-
-            # Content based on elapsed time
-            y = 250
-
-            if elapsed < 3:
-                section = text_font.render("ADAPTIVE LEARNING SESSION", True, LEARN)
-                self.screen.blit(section, (50, y))
-                y += 60
-
-                items = [
-                    "🎯 Student: Alex (Calculus)",
-                    "📖 Topic: Integration by parts",
-                    "🧠 Comprehension: 73% (Good)",
-                    "✓ Difficulty auto-adjusted to Advanced"
-                ]
-                for item in items:
-                    text = small_font.render(item, True, WHITE)
-                    self.screen.blit(text, (80, y))
-                    y += 45
-
-            elif elapsed < 6:
-                section = text_font.render("FOCUS ENVIRONMENT OPTIMIZATION", True, LEARN)
-                self.screen.blit(section, (50, y))
-                y += 60
-
-                items = [
-                    "💡 Lighting: Focus mode (cool white)",
-                    "🔇 Noise cancellation: Active",
-                    "📵 Distractions: 12 notifications blocked",
-                    "⏱️  Pomodoro: 22 min remaining"
-                ]
-                for item in items:
-                    text = small_font.render(item, True, WHITE)
-                    self.screen.blit(text, (80, y))
-                    y += 45
-
-            else:
-                section = text_font.render("LEARNING ANALYTICS & INSIGHTS", True, PROGRESS)
-                self.screen.blit(section, (50, y))
-                y += 60
-
-                items = [
-                    "✓ Differential equations: 92% mastery",
-                    "✓ Linear algebra: 88% mastery",
-                    "📊 Integration techniques: 65% (practice)",
-                    "🎓 Personalized practice set ready"
-                ]
-                for item in items:
-                    text = small_font.render(item, True, WHITE)
-                    self.screen.blit(text, (80, y))
-                    y += 45
-
-            # Footer
-            footer = small_font.render(f"4 Students Active · Focus Score: 88/100 · {int(duration - elapsed)}s", True, ACCENT)
-            self.screen.blit(footer, (50, 950))
-
-            pygame.display.flip()
             clock.tick(30)
 
     def get_status(self) -> dict:

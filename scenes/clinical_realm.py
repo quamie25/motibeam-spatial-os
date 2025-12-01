@@ -9,11 +9,7 @@ from datetime import datetime
 from core.base_realm import SpatialRealm
 from core.spatial_engine import SpatialEngine, BeamNetworkProtocol
 
-try:
-    import pygame
-    PYGAME_AVAILABLE = True
-except ImportError:
-    PYGAME_AVAILABLE = False
+import pygame
 
 
 class ClinicalRealm(SpatialRealm):
@@ -90,106 +86,72 @@ class ClinicalRealm(SpatialRealm):
         print("  ✓ Appointment scheduled: Dr. Smith (Thu 2:00 PM)")
         print("  ✓ Lab results: Normal range (uploaded to portal)")
 
-    def run(self, duration=10):
-        """Run pygame visual demo for specified duration"""
-        if not PYGAME_AVAILABLE or not self.screen:
+    def run(self, duration=15):
+        """Run pygame visual demo with unified Neon HUD theme"""
+        if not self.screen:
             self.run_demo_cycle()
             return
+
+        from scenes.theme_neon import render_realm_hud
 
         start_time = time.time()
         clock = pygame.time.Clock()
 
-        # Colors
-        BG = (20, 15, 30)
-        WHITE = (255, 255, 255)
-        ACCENT = (150, 220, 255)
-        HEALTH = (100, 255, 180)
-        WARNING = (255, 200, 100)
-
-        try:
-            title_font = pygame.font.Font(None, 84)
-            subtitle_font = pygame.font.Font(None, 48)
-            text_font = pygame.font.Font(None, 36)
-            small_font = pygame.font.Font(None, 28)
-        except:
-            title_font = pygame.font.SysFont('arial', 84, bold=True)
-            subtitle_font = pygame.font.SysFont('arial', 48)
-            text_font = pygame.font.SysFont('arial', 36)
-            small_font = pygame.font.SysFont('arial', 28)
+        # Define content sections that rotate over time
+        content_sections = [
+            {
+                'title': 'CONTINUOUS VITAL MONITORING',
+                'items': [
+                    "Heart Rate: 68 bpm (Normal)",
+                    "Blood Pressure: 118/76 mmHg (Optimal)",
+                    "SpO2: 98% (Excellent)",
+                    "Sleep Score: 87/100",
+                    "All vitals within healthy range"
+                ]
+            },
+            {
+                'title': 'ACTIVITY & FITNESS TRACKING',
+                'items': [
+                    "Steps: 8,240 / 10,000 (82% complete)",
+                    "Active Minutes: 45 min",
+                    "Calories burned: 420 kcal",
+                    "On track to meet daily goals",
+                    "Exercise recommendation: 15min walk"
+                ]
+            },
+            {
+                'title': 'PREDICTIVE HEALTH AI',
+                'items': [
+                    "Irregular sleep pattern detected (3 days)",
+                    "Recommendation: Earlier bedtime (10:30 PM)",
+                    "Predicted wellness improvement: +8%",
+                    "Medication reminder: 8:00 PM today",
+                    "Next checkup: Dr. Smith (Thu 2:00 PM)"
+                ]
+            }
+        ]
 
         while time.time() - start_time < duration:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     return
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                    return
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE or event.key == pygame.K_q:
+                        return
 
-            self.screen.fill(BG)
             elapsed = time.time() - start_time
 
-            # Title
-            title = title_font.render("⚕️  CLINICAL REALM", True, WHITE)
-            self.screen.blit(title, (50, 50))
+            render_realm_hud(
+                screen=self.screen,
+                realm_id='clinical',
+                title='CLINICAL REALM',
+                subtitle='Health Monitoring · Wellness · Medical AI',
+                mode='Consumer Mode',
+                content_sections=content_sections,
+                elapsed=elapsed,
+                duration=duration
+            )
 
-            subtitle = subtitle_font.render("Health Monitoring · Wellness · Medical AI", True, ACCENT)
-            self.screen.blit(subtitle, (50, 150))
-
-            # Content based on elapsed time
-            y = 250
-
-            if elapsed < 3:
-                section = text_font.render("CONTINUOUS VITAL MONITORING", True, HEALTH)
-                self.screen.blit(section, (50, y))
-                y += 60
-
-                items = [
-                    "💓 Heart Rate: 68 bpm (Normal)",
-                    "🩸 Blood Pressure: 118/76 mmHg (Optimal)",
-                    "🫁 SpO2: 98% (Excellent)",
-                    "😴 Sleep Score: 87/100"
-                ]
-                for item in items:
-                    text = small_font.render(item, True, WHITE)
-                    self.screen.blit(text, (80, y))
-                    y += 45
-
-            elif elapsed < 6:
-                section = text_font.render("ACTIVITY & FITNESS TRACKING", True, HEALTH)
-                self.screen.blit(section, (50, y))
-                y += 60
-
-                items = [
-                    "🏃 Steps: 8,240 / 10,000 (82%)",
-                    "⏱️  Active Minutes: 45 min",
-                    "🔥 Calories: 420 kcal burned",
-                    "✓ On track to meet daily goals"
-                ]
-                for item in items:
-                    text = small_font.render(item, True, WHITE)
-                    self.screen.blit(text, (80, y))
-                    y += 45
-
-            else:
-                section = text_font.render("PREDICTIVE HEALTH AI", True, WARNING)
-                self.screen.blit(section, (50, y))
-                y += 60
-
-                items = [
-                    "⚠️  Irregular sleep pattern (3 days)",
-                    "📊 Recommend: Earlier bedtime 10:30 PM",
-                    "🎯 Predicted improvement: +8% wellness",
-                    "💊 Medication reminder: 8:00 PM today"
-                ]
-                for item in items:
-                    text = small_font.render(item, True, WHITE)
-                    self.screen.blit(text, (80, y))
-                    y += 45
-
-            # Footer
-            footer = small_font.render(f"12 Health Devices Connected · Wellness Score: 94/100 · {int(duration - elapsed)}s", True, ACCENT)
-            self.screen.blit(footer, (50, 950))
-
-            pygame.display.flip()
             clock.tick(30)
 
     def get_status(self) -> dict:

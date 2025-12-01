@@ -9,11 +9,7 @@ from datetime import datetime
 from core.base_realm import SpatialRealm
 from core.spatial_engine import SpatialEngine, BeamNetworkProtocol
 
-try:
-    import pygame
-    PYGAME_AVAILABLE = True
-except ImportError:
-    PYGAME_AVAILABLE = False
+import pygame
 
 
 class AviationRealm(SpatialRealm):
@@ -149,85 +145,72 @@ class AviationRealm(SpatialRealm):
             "speed": random.randint(400, 500)
         }
 
-    def run(self, duration=10):
-        """Run pygame visual demo with HUD theme"""
-        if not PYGAME_AVAILABLE or not self.screen:
+    def run(self, duration=15):
+        """Run pygame visual demo with unified Neon HUD theme"""
+        if not self.screen:
             self.run_demo_cycle()
             return
 
-        from core.design_tokens import (
-            get_fonts, draw_animated_background, draw_header_bar,
-            draw_footer_hud, draw_content_card, REALM_COLORS
-        )
+        from scenes.theme_neon import render_realm_hud
 
         start_time = time.time()
         clock = pygame.time.Clock()
-        accent_color = REALM_COLORS.get('aviation', (100, 200, 255))
-        fonts = get_fonts(self.screen)
+
+        # Define content sections that rotate over time
+        content_sections = [
+            {
+                'title': 'AIR TRAFFIC CONTROL',
+                'items': [
+                    "Active flights: 127 in sector",
+                    "Airspace: Boston ARTCC (Class A)",
+                    "UAL2847: B777 @ FL350, 485kts",
+                    "DAL1523: A320 @ FL280, 420kts",
+                    "Weather: CAVOK (Clear and visibility OK)"
+                ]
+            },
+            {
+                'title': 'COLLISION AVOIDANCE ALERT',
+                'items': [
+                    "Conflict: UAL2847 & DAL1523",
+                    "Proximity: 4.2 nm horizontal, 1,500 ft vertical",
+                    "Time to conflict: 3 minutes 15 seconds",
+                    "UAL2847: Climb to FL370 (from FL350)",
+                    "Commands transmitted - Conflict resolved"
+                ]
+            },
+            {
+                'title': 'AR COCKPIT INTEGRATION',
+                'items': [
+                    "Holographic traffic display: ACTIVE",
+                    "Real-time weather overlay rendered",
+                    "Terrain awareness: ENHANCED",
+                    "3D runway approach guidance active",
+                    "Flight path optimized - 14min saved, 1,200lbs fuel"
+                ]
+            }
+        ]
 
         while time.time() - start_time < duration:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     return
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                    return
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE or event.key == pygame.K_q:
+                        return
 
             elapsed = time.time() - start_time
-            remaining = int(duration - elapsed)
 
-            draw_animated_background(self.screen, elapsed)
-            draw_header_bar(
-                self.screen, fonts, "✈️", "AVIATION CONTROL",
-                "Air Traffic Control · Flight Safety · Navigation AI",
-                accent_color, "OPERATIONAL"
+            render_realm_hud(
+                screen=self.screen,
+                realm_id='aviation',
+                title='AVIATION CONTROL',
+                subtitle='Air Traffic Control · Flight Safety · Navigation AI',
+                mode='Ops Mode',
+                content_sections=content_sections,
+                elapsed=elapsed,
+                duration=duration
             )
 
-            # Time-based content sections
-            if elapsed < duration / 3:
-                draw_content_card(
-                    self.screen, fonts, "AIR TRAFFIC CONTROL",
-                    [
-                        "🛫 Active flights: 127 in sector",
-                        "📍 Airspace: Boston ARTCC (Class A)",
-                        "✈️ UAL2847: B777 @ FL350, 485kts",
-                        "✈️ DAL1523: A320 @ FL280, 420kts",
-                        "🌤️ Weather: CAVOK (Clear and visibility OK)"
-                    ],
-                    280, accent_color
-                )
-            elif elapsed < duration * 2 / 3:
-                draw_content_card(
-                    self.screen, fonts, "COLLISION AVOIDANCE ALERT",
-                    [
-                        "⚠️ Conflict: UAL2847 & DAL1523",
-                        "📊 Proximity: 4.2 nm horizontal, 1,500 ft vertical",
-                        "⏱️ Time to conflict: 3 minutes 15 seconds",
-                        "🎯 UAL2847: Climb to FL370 (from FL350)",
-                        "✓ Commands transmitted - Conflict resolved"
-                    ],
-                    280, accent_color
-                )
-            else:
-                draw_content_card(
-                    self.screen, fonts, "AR COCKPIT INTEGRATION",
-                    [
-                        "🔮 Holographic traffic display: ACTIVE",
-                        "🌦️ Real-time weather overlay rendered",
-                        "🗻 Terrain awareness: ENHANCED",
-                        "🛬 3D runway approach guidance active",
-                        "✓ Flight path optimized - 14min saved, 1,200lbs fuel"
-                    ],
-                    280, accent_color
-                )
-
-            draw_footer_hud(
-                self.screen, fonts,
-                "Aviation Control · Operations Realm",
-                f"Flights: 127 | Active: {remaining}s",
-                "Safe Skies Guaranteed",
-                accent_color
-            )
-
-            pygame.display.flip()
             clock.tick(30)
+
 

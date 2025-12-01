@@ -3,6 +3,19 @@ MotiBeam Spatial OS - Realms Configuration
 Configuration for all available realms in the system
 """
 
+# ASCII symbol fallbacks (no emoji dependencies)
+REALM_SYMBOLS = {
+    'home': '[H]',         # Home
+    'clinical': '[+]',     # Clinical/Medical
+    'education': '[E]',    # Education
+    'transport': '[T]',    # Transport
+    'emergency': '[!]',    # Emergency/Alert
+    'security': '[S]',     # Security
+    'enterprise': '[B]',   # Business
+    'aviation': '[A]',     # Aviation
+    'maritime': '[M]',     # Maritime
+}
+
 # REALM ORDER FOR AUTO-DEMO: Consumer realms first, then ops realms
 AUTO_DEMO_ORDER = [
     "home",
@@ -116,7 +129,7 @@ REALMS_CONFIG = {
 SYSTEM_CONFIG = {
     "version": "MOS-1.0",
     "codename": "Kickstarter Demo",
-    "demo_cycle_duration": 10,  # seconds per demo cycle (visual mode)
+    "demo_cycle_duration": 15,  # seconds per realm in auto-demo (increased for better showcase)
     "auto_loop_delay": 2,  # seconds between realms in auto-loop
     "max_sensor_refresh": 1.0,  # seconds
     "ai_processing_delay": 0.5  # seconds

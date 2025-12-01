@@ -9,11 +9,7 @@ from datetime import datetime
 from core.base_realm import SpatialRealm
 from core.spatial_engine import SpatialEngine, BeamNetworkProtocol
 
-try:
-    import pygame
-    PYGAME_AVAILABLE = True
-except ImportError:
-    PYGAME_AVAILABLE = False
+import pygame
 
 
 class EnterpriseRealm(SpatialRealm):
@@ -138,85 +134,72 @@ class EnterpriseRealm(SpatialRealm):
         print(f"  📅 Booking {room_id} for {duration} minutes")
         return True
 
-    def run(self, duration=10):
-        """Run pygame visual demo with HUD theme"""
-        if not PYGAME_AVAILABLE or not self.screen:
+    def run(self, duration=15):
+        """Run pygame visual demo with unified Neon HUD theme"""
+        if not self.screen:
             self.run_demo_cycle()
             return
 
-        from core.design_tokens import (
-            get_fonts, draw_animated_background, draw_header_bar,
-            draw_footer_hud, draw_content_card, REALM_COLORS
-        )
+        from scenes.theme_neon import render_realm_hud
 
         start_time = time.time()
         clock = pygame.time.Clock()
-        accent_color = REALM_COLORS.get('enterprise', (100, 180, 255))
-        fonts = get_fonts(self.screen)
+
+        # Define content sections that rotate over time
+        content_sections = [
+            {
+                'title': 'INTELLIGENT WORKSPACE',
+                'items': [
+                    "Employees present: 87 across 3 floors",
+                    "Meeting rooms: 5/12 in use",
+                    "Hot desks available: 23 stations",
+                    "Environmental comfort: Optimal",
+                    "Adaptive lighting and climate control"
+                ]
+            },
+            {
+                'title': 'AI MEETING ORCHESTRATION',
+                'items': [
+                    "Team sync requested by Sarah Chen",
+                    "Optimal time: Today, 14:30 (30 min)",
+                    "Room: Innovation Lab (CONF-A)",
+                    "6 attendees local, 2 remote holograms",
+                    "Invites sent, AV configured, coffee ordered"
+                ]
+            },
+            {
+                'title': 'AR COLLABORATION ACTIVE',
+                'items': [
+                    "Spatial holographic display: ENABLED",
+                    "Remote participants as real-time holograms",
+                    "Shared 3D workspace synchronized",
+                    "Collaboration efficiency: +47% vs video",
+                    "Productivity and wellness optimized"
+                ]
+            }
+        ]
 
         while time.time() - start_time < duration:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     return
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                    return
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE or event.key == pygame.K_q:
+                        return
 
             elapsed = time.time() - start_time
-            remaining = int(duration - elapsed)
 
-            draw_animated_background(self.screen, elapsed)
-            draw_header_bar(
-                self.screen, fonts, "🏢", "ENTERPRISE WORKSPACE",
-                "Office Environments · Collaboration · Productivity AI",
-                accent_color, "ACTIVE"
+            render_realm_hud(
+                screen=self.screen,
+                realm_id='enterprise',
+                title='ENTERPRISE WORKSPACE',
+                subtitle='Office Environments · Collaboration · Productivity AI',
+                mode='Ops Mode',
+                content_sections=content_sections,
+                elapsed=elapsed,
+                duration=duration
             )
 
-            # Time-based content sections
-            if elapsed < duration / 3:
-                draw_content_card(
-                    self.screen, fonts, "INTELLIGENT WORKSPACE",
-                    [
-                        "👥 Employees present: 87 across 3 floors",
-                        "📅 Meeting rooms: 5/12 in use",
-                        "🪑 Hot desks available: 23 stations",
-                        "🌡️ Environmental comfort: Optimal",
-                        "✓ Adaptive lighting and climate control"
-                    ],
-                    280, accent_color
-                )
-            elif elapsed < duration * 2 / 3:
-                draw_content_card(
-                    self.screen, fonts, "AI MEETING ORCHESTRATION",
-                    [
-                        "📅 Team sync requested by Sarah Chen",
-                        "🎯 Optimal time: Today, 14:30 (30 min)",
-                        "📍 Room: Innovation Lab (CONF-A)",
-                        "👥 6 attendees local, 2 remote holograms",
-                        "✓ Invites sent, AV configured, coffee ordered"
-                    ],
-                    280, accent_color
-                )
-            else:
-                draw_content_card(
-                    self.screen, fonts, "AR COLLABORATION ACTIVE",
-                    [
-                        "🔮 Spatial holographic display: ENABLED",
-                        "🌐 Remote participants as real-time holograms",
-                        "📊 Shared 3D workspace synchronized",
-                        "⚡ Collaboration efficiency: +47% vs video",
-                        "✓ Productivity & wellness optimized"
-                    ],
-                    280, accent_color
-                )
-
-            draw_footer_hud(
-                self.screen, fonts,
-                "Enterprise Workspace · Operations Realm",
-                f"Employees: 87 | Active: {remaining}s",
-                "Productivity Optimized",
-                accent_color
-            )
-
-            pygame.display.flip()
             clock.tick(30)
+
 

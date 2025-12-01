@@ -9,11 +9,7 @@ from datetime import datetime
 from core.base_realm import SpatialRealm
 from core.spatial_engine import SpatialEngine, BeamNetworkProtocol
 
-try:
-    import pygame
-    PYGAME_AVAILABLE = True
-except ImportError:
-    PYGAME_AVAILABLE = False
+import pygame
 
 
 class EmergencyRealm(SpatialRealm):
@@ -140,83 +136,72 @@ class EmergencyRealm(SpatialRealm):
             "timestamp": datetime.now()
         }
 
-    def run(self, duration=10):
-        """Run pygame visual demo with HUD theme"""
-        if not PYGAME_AVAILABLE or not self.screen:
+    def run(self, duration=15):
+        """Run pygame visual demo with unified Neon HUD theme"""
+        if not self.screen:
             self.run_demo_cycle()
             return
 
-        from core.design_tokens import (
-            get_fonts, draw_animated_background, draw_header_bar,
-            draw_footer_hud, draw_content_card, REALM_COLORS
-        )
+        from scenes.theme_neon import render_realm_hud
 
         start_time = time.time()
         clock = pygame.time.Clock()
-        accent_color = REALM_COLORS.get('emergency', (255, 80, 100))
-        fonts = get_fonts(self.screen)
+
+        # Define content sections that rotate over time
+        content_sections = [
+            {
+                'title': 'INCOMING 911 CALL',
+                'items': [
+                    "Elderly male, chest pain, difficulty breathing",
+                    "Location: Boston, MA (42.3601 N, 71.0589 W)",
+                    "Priority: CRITICAL - Suspected cardiac event",
+                    "AI Triage Confidence: 94%",
+                    "Distance to nearest unit: 2.8 miles"
+                ]
+            },
+            {
+                'title': 'RESOURCE ALLOCATION',
+                'items': [
+                    "AMB-01 dispatched (ETA: 3m 45s) - Priority 1",
+                    "FIRE-02 backup support (ETA: 4m 12s)",
+                    "AR navigation overlay sent to responder HUD",
+                    "Patient vitals streaming to paramedics",
+                    "Building access codes transmitted"
+                ]
+            },
+            {
+                'title': 'INCIDENT RESOLUTION',
+                'items': [
+                    "Paramedics arrived: 3m 28s (ahead of ETA)",
+                    "Patient stabilized on-scene",
+                    "En route to Mass General Hospital",
+                    "Family members notified automatically",
+                    "Incident logged for system improvement"
+                ]
+            }
+        ]
 
         while time.time() - start_time < duration:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     return
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                    return
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE or event.key == pygame.K_q:
+                        return
 
             elapsed = time.time() - start_time
-            remaining = int(duration - elapsed)
 
-            draw_animated_background(self.screen, elapsed)
-            draw_header_bar(
-                self.screen, fonts, "🚨", "EMERGENCY RESPONSE",
-                "911 Dispatch · Crisis Management · Medical AI",
-                accent_color, "CRITICAL"
+            render_realm_hud(
+                screen=self.screen,
+                realm_id='emergency',
+                title='EMERGENCY RESPONSE',
+                subtitle='911 Dispatch · Crisis Management · Medical AI',
+                mode='Ops Mode',
+                content_sections=content_sections,
+                elapsed=elapsed,
+                duration=duration
             )
 
-            # Time-based content sections
-            if elapsed < duration / 3:
-                draw_content_card(
-                    self.screen, fonts, "INCOMING 911 CALL",
-                    [
-                        "📞 Elderly male, chest pain, difficulty breathing",
-                        "📍 Location: Boston, MA (42.3601° N, 71.0589° W)",
-                        "🎯 Priority: CRITICAL - Suspected cardiac event",
-                        "📊 AI Triage Confidence: 94%"
-                    ],
-                    280, accent_color
-                )
-            elif elapsed < duration * 2 / 3:
-                draw_content_card(
-                    self.screen, fonts, "RESOURCE ALLOCATION",
-                    [
-                        "🚑 AMB-01 dispatched (ETA: 3m 45s) - Priority 1",
-                        "🚒 FIRE-02 backup support (ETA: 4m 12s)",
-                        "📡 AR navigation overlay → responder HUD",
-                        "🏥 Patient vitals streaming to paramedics",
-                        "✓ Building access codes transmitted"
-                    ],
-                    280, accent_color
-                )
-            else:
-                draw_content_card(
-                    self.screen, fonts, "INCIDENT RESOLUTION",
-                    [
-                        "✓ Paramedics arrived: 3m 28s (ahead of ETA)",
-                        "✓ Patient stabilized on-scene",
-                        "✓ En route to Mass General Hospital",
-                        "✓ Family members notified automatically",
-                        "✓ Incident logged for system improvement"
-                    ],
-                    280, accent_color
-                )
-
-            draw_footer_hud(
-                self.screen, fonts,
-                "Emergency Response · Operations Realm",
-                f"Units Ready: 3 | Active: {remaining}s",
-                "Real-time Coordination",
-                accent_color
-            )
-
-            pygame.display.flip()
             clock.tick(30)
+
+

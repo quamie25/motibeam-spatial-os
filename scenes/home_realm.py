@@ -9,11 +9,7 @@ from datetime import datetime
 from core.base_realm import SpatialRealm
 from core.spatial_engine import SpatialEngine, BeamNetworkProtocol
 
-try:
-    import pygame
-    PYGAME_AVAILABLE = True
-except ImportError:
-    PYGAME_AVAILABLE = False
+import pygame
 
 
 class HomeRealm(SpatialRealm):
@@ -91,105 +87,72 @@ class HomeRealm(SpatialRealm):
         print("  Net: +2.6 kW (feeding grid)")
         print("  💰 Today's savings: $12.40")
 
-    def run(self, duration=10):
-        """Run pygame visual demo for specified duration"""
-        if not PYGAME_AVAILABLE or not self.screen:
+    def run(self, duration=15):
+        """Run pygame visual demo with unified Neon HUD theme"""
+        if not self.screen:
             self.run_demo_cycle()
             return
+
+        from scenes.theme_neon import render_realm_hud
 
         start_time = time.time()
         clock = pygame.time.Clock()
 
-        # Colors
-        BG = (15, 20, 35)
-        WHITE = (255, 255, 255)
-        ACCENT = (100, 200, 255)
-        GREEN = (100, 255, 150)
-
-        try:
-            title_font = pygame.font.Font(None, 84)
-            subtitle_font = pygame.font.Font(None, 48)
-            text_font = pygame.font.Font(None, 36)
-            small_font = pygame.font.Font(None, 28)
-        except:
-            title_font = pygame.font.SysFont('arial', 84, bold=True)
-            subtitle_font = pygame.font.SysFont('arial', 48)
-            text_font = pygame.font.SysFont('arial', 36)
-            small_font = pygame.font.SysFont('arial', 28)
+        # Define content sections that rotate over time
+        content_sections = [
+            {
+                'title': 'MORNING ROUTINE AUTOMATION',
+                'items': [
+                    "Sarah waking up detected (6:45 AM)",
+                    "Bedroom lights: Gradual warm-up started",
+                    "Coffee maker: Brewing started",
+                    "Personalized news briefing ready",
+                    "47 smart devices synchronized"
+                ]
+            },
+            {
+                'title': 'FAMILY PRESENCE & ACTIVITY',
+                'items': [
+                    "Dad: Home Office (Focus Mode)",
+                    "Mom: Kitchen (Meal Prep)",
+                    "Kids: Playroom (Active Play)",
+                    "Adjusted lighting, climate, audio zones",
+                    "Activity patterns learned and optimized"
+                ]
+            },
+            {
+                'title': 'ENERGY & SECURITY OPTIMIZATION',
+                'items': [
+                    "Solar generation: 6.8 kW",
+                    "Current usage: 4.2 kW",
+                    "Net: +2.6 kW to grid",
+                    "All zones secured, no alerts",
+                    "Today's energy savings: $12.40"
+                ]
+            }
+        ]
 
         while time.time() - start_time < duration:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     return
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                    return
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE or event.key == pygame.K_q:
+                        return
 
-            self.screen.fill(BG)
             elapsed = time.time() - start_time
 
-            # Title
-            title = title_font.render("🏡 HOME REALM", True, WHITE)
-            self.screen.blit(title, (50, 50))
+            render_realm_hud(
+                screen=self.screen,
+                realm_id='home',
+                title='HOME REALM',
+                subtitle='Smart Home · Family · Ambient Living',
+                mode='Consumer Mode',
+                content_sections=content_sections,
+                elapsed=elapsed,
+                duration=duration
+            )
 
-            subtitle = subtitle_font.render("Smart Home · Family · Ambient Living", True, ACCENT)
-            self.screen.blit(subtitle, (50, 150))
-
-            # Content based on elapsed time
-            y = 250
-
-            if elapsed < 3:
-                section = text_font.render("MORNING ROUTINE AUTOMATION", True, GREEN)
-                self.screen.blit(section, (50, y))
-                y += 60
-
-                items = [
-                    "✓ Sarah waking up detected (6:45 AM)",
-                    "✓ Bedroom lights: Gradual warm-up",
-                    "✓ Coffee maker: Brewing started",
-                    "✓ Personalized news briefing ready"
-                ]
-                for item in items:
-                    text = small_font.render(item, True, WHITE)
-                    self.screen.blit(text, (80, y))
-                    y += 45
-
-            elif elapsed < 6:
-                section = text_font.render("FAMILY PRESENCE & ACTIVITY", True, GREEN)
-                self.screen.blit(section, (50, y))
-                y += 60
-
-                items = [
-                    "👨 Dad: Home Office (Focus Mode)",
-                    "👩 Mom: Kitchen (Meal Prep)",
-                    "👧👦 Kids: Playroom (Active Play)",
-                    "✓ 47 smart devices synchronized"
-                ]
-                for item in items:
-                    text = small_font.render(item, True, WHITE)
-                    self.screen.blit(text, (80, y))
-                    y += 45
-
-            else:
-                section = text_font.render("ENERGY & SECURITY", True, GREEN)
-                self.screen.blit(section, (50, y))
-                y += 60
-
-                items = [
-                    "⚡ Solar: 6.8 kW generating",
-                    "📊 Usage: 4.2 kW consuming",
-                    "💰 Net: +2.6 kW to grid",
-                    "🔐 All zones secured · No alerts"
-                ]
-                for item in items:
-                    text = small_font.render(item, True, WHITE)
-                    self.screen.blit(text, (80, y))
-                    y += 45
-
-            # Footer
-            footer = small_font.render(f"Ambient Intelligence Active · {int(duration - elapsed)}s remaining", True, ACCENT)
-            self.screen.blit(footer, (50, 950))
-
-            pygame.display.flip()
             clock.tick(30)
 
     def get_status(self) -> dict:

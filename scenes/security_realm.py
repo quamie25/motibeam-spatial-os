@@ -9,11 +9,7 @@ from datetime import datetime
 from core.base_realm import SpatialRealm
 from core.spatial_engine import SpatialEngine, BeamNetworkProtocol
 
-try:
-    import pygame
-    PYGAME_AVAILABLE = True
-except ImportError:
-    PYGAME_AVAILABLE = False
+import pygame
 
 
 class SecurityRealm(SpatialRealm):
@@ -142,84 +138,72 @@ class SecurityRealm(SpatialRealm):
             "last_scan": datetime.now()
         }
 
-    def run(self, duration=10):
-        """Run pygame visual demo with HUD theme"""
-        if not PYGAME_AVAILABLE or not self.screen:
+    def run(self, duration=15):
+        """Run pygame visual demo with unified Neon HUD theme"""
+        if not self.screen:
             self.run_demo_cycle()
             return
 
-        from core.design_tokens import (
-            get_fonts, draw_animated_background, draw_header_bar,
-            draw_footer_hud, draw_content_card, REALM_COLORS
-        )
+        from scenes.theme_neon import render_realm_hud
 
         start_time = time.time()
         clock = pygame.time.Clock()
-        accent_color = REALM_COLORS.get('security', (150, 100, 255))
-        fonts = get_fonts(self.screen)
+
+        # Define content sections that rotate over time
+        content_sections = [
+            {
+                'title': 'MULTI-ZONE SURVEILLANCE',
+                'items': [
+                    "Cameras online: 40 (AI-powered analysis)",
+                    "Facial recognition: ACTIVE",
+                    "Behavior anomaly detection: MONITORING",
+                    "360 degree panoramic perimeter coverage",
+                    "All zones secured and operational"
+                ]
+            },
+            {
+                'title': 'THREAT DETECTION ALERT',
+                'items': [
+                    "Unauthorized access attempt - Loading Dock",
+                    "Subject: Unknown individual (no badge)",
+                    "Behavior score: 73/100 (Suspicious)",
+                    "Threat level: MODERATE",
+                    "Security team dispatched to location"
+                ]
+            },
+            {
+                'title': 'INTELLIGENT ACCESS CONTROL',
+                'items': [
+                    "Server room entry request detected",
+                    "Badge: VALID (Employee ID: E-7842)",
+                    "Biometric: MATCH (Fingerprint verified)",
+                    "Location context: APPROVED",
+                    "Multi-factor authentication: ACCESS GRANTED"
+                ]
+            }
+        ]
 
         while time.time() - start_time < duration:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     return
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                    return
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE or event.key == pygame.K_q:
+                        return
 
             elapsed = time.time() - start_time
-            remaining = int(duration - elapsed)
 
-            draw_animated_background(self.screen, elapsed)
-            draw_header_bar(
-                self.screen, fonts, "🛡️", "SECURITY & SURVEILLANCE",
-                "Perimeter Defense · Access Control · Threat Detection",
-                accent_color, "ARMED"
+            render_realm_hud(
+                screen=self.screen,
+                realm_id='security',
+                title='SECURITY & SURVEILLANCE',
+                subtitle='Perimeter Defense · Access Control · Threat Detection',
+                mode='Ops Mode',
+                content_sections=content_sections,
+                elapsed=elapsed,
+                duration=duration
             )
 
-            # Time-based content sections
-            if elapsed < duration / 3:
-                draw_content_card(
-                    self.screen, fonts, "MULTI-ZONE SURVEILLANCE",
-                    [
-                        "🎥 Cameras online: 40 (AI-powered analysis)",
-                        "🔍 Facial recognition: ACTIVE",
-                        "📊 Behavior anomaly detection: MONITORING",
-                        "🌐 360° panoramic perimeter coverage",
-                        "✓ All zones secured and operational"
-                    ],
-                    280, accent_color
-                )
-            elif elapsed < duration * 2 / 3:
-                draw_content_card(
-                    self.screen, fonts, "THREAT DETECTION ALERT",
-                    [
-                        "⚠️ Unauthorized access attempt - Loading Dock",
-                        "🔍 Subject: Unknown individual (no badge)",
-                        "📊 Behavior score: 73/100 (Suspicious)",
-                        "🎯 Threat level: MODERATE",
-                        "✓ Security team dispatched to location"
-                    ],
-                    280, accent_color
-                )
-            else:
-                draw_content_card(
-                    self.screen, fonts, "INTELLIGENT ACCESS CONTROL",
-                    [
-                        "🚪 Server room entry request detected",
-                        "✓ Badge: VALID (Employee ID: E-7842)",
-                        "✓ Biometric: MATCH (Fingerprint verified)",
-                        "✓ Location context: APPROVED",
-                        "→ Multi-factor authentication: ACCESS GRANTED"
-                    ],
-                    280, accent_color
-                )
-
-            draw_footer_hud(
-                self.screen, fonts,
-                "Security & Surveillance · Operations Realm",
-                f"Zones: 4 | Active: {remaining}s",
-                "AI-Powered Protection",
-                accent_color
-            )
-
-            pygame.display.flip()
             clock.tick(30)
+
+
