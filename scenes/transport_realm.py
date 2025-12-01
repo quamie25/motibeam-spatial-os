@@ -88,48 +88,28 @@ class TransportRealm(SpatialRealm):
         print("  ✓ Route optimized for battery range")
 
     def run(self, duration=12):
-        """Run pygame visual demo with unified Neon HUD theme"""
+        """Run windshield HUD with speed, navigation, and safety info"""
         if not self.screen:
             self.run_demo_cycle()
             return
 
-        from scenes.theme_neon import render_realm_hud
+        from scenes.theme_neon import (
+            get_fonts, draw_header, REALM_COLORS,
+            COLOR_TEXT_PRIMARY, COLOR_TEXT_SECONDARY,
+            COLOR_ACCENT_GREEN, COLOR_ACCENT_ORANGE, COLOR_BG
+        )
 
         start_time = time.time()
         clock = pygame.time.Clock()
+        accent_color = REALM_COLORS.get('transport', (100, 180, 255))
+        fonts = get_fonts(self.screen)
+        w, h = screen.get_size()
 
-        # Define content sections that rotate over time
-        content_sections = [
-            {
-                'title': 'AR NAVIGATION HUD',
-                'items': [
-                    "Destination: 123 Main St, Boston MA",
-                    "Distance: 12.3 miles",
-                    "ETA: 18 minutes (optimal route)",
-                    "AR arrows overlaid on windshield",
-                    "Lane guidance: Keep right, exit in 2 miles"
-                ]
-            },
-            {
-                'title': 'INTELLIGENT SAFETY SYSTEMS',
-                'items': [
-                    "Forward collision: Clear",
-                    "Blind spot left: Vehicle detected",
-                    "Blind spot right: Clear",
-                    "Pedestrian ahead detected, reducing speed",
-                    "Auto-brake engaged: 55 to 30 mph"
-                ]
-            },
-            {
-                'title': 'PREDICTIVE TRAFFIC AI',
-                'items': [
-                    "Accident detected on Route 93",
-                    "Impact: +12 minute delay",
-                    "Alternate route calculated (via I-90)",
-                    "New ETA: 19 minutes (saves 11 min)",
-                    "Battery: 87% (240 miles range)"
-                ]
-            }
+        # Driving scenarios that cycle
+        scenarios = [
+            {'mode': 'STANDARD', 'speed': 55, 'condition': 'Clear', 'alert': None},
+            {'mode': 'RAIN', 'speed': 45, 'condition': 'Low Visibility', 'alert': 'Wipers: Auto'},
+            {'mode': 'HIGHWAY', 'speed': 70, 'condition': 'Cruise Active', 'alert': None},
         ]
 
         while time.time() - start_time < duration:
@@ -141,18 +121,143 @@ class TransportRealm(SpatialRealm):
                         return
 
             elapsed = time.time() - start_time
+            remaining = int(duration - elapsed)
 
-            render_realm_hud(
-                screen=self.screen,
-                realm_id='transport',
-                title='TRANSPORT REALM',
-                subtitle='Automotive HUD · Navigation · Driver Assistance',
-                mode='Consumer Mode',
-                content_sections=content_sections,
-                elapsed=elapsed,
-                duration=duration
+            # Minimal background - like glass HUD (fewer/smaller circles)
+            self.screen.fill(COLOR_BG)
+
+            # Subtle horizontal bands for HUD feel
+            for i in range(3):
+                band_y = 300 + i * 200
+                band_surf = pygame.Surface((w, 2), pygame.SRCALPHA)
+                pygame.draw.rect(band_surf, (*accent_color, 15), (0, 0, w, 2))
+                self.screen.blit(band_surf, (0, band_y))
+
+            # Header (minimal for HUD)
+            draw_header(
+                self.screen, fonts, 'transport',
+                'TRANSPORT REALM',
+                'Automotive HUD · Navigation · Driver Assistance',
+                accent_color, "● LIVE"
             )
 
+            # Determine scenario (cycle every 4 seconds)
+            scenario_index = int(elapsed / 4) % len(scenarios)
+            scenario = scenarios[scenario_index]
+
+            # === CENTER-RIGHT: HUGE SPEED ===
+            speed_x = w - 500
+            speed_y = 350
+
+            speed_text = str(scenario['speed'])
+            speed_surf = fonts['mega'].render(speed_text, True, accent_color)
+            self.screen.blit(speed_surf, (speed_x, speed_y))
+
+            unit_surf = fonts['header'].render("mph", True, COLOR_TEXT_SECONDARY)
+            self.screen.blit(unit_surf, (speed_x + 200, speed_y + 120))
+
+            # Mode indicator
+            mode_surf = fonts['body'].render(scenario['mode'], True, accent_color)
+            self.screen.blit(mode_surf, (speed_x, speed_y - 60))
+
+            # Condition
+            cond_surf = fonts['small'].render(scenario['condition'], True, COLOR_TEXT_SECONDARY)
+            self.screen.blit(cond_surf, (speed_x, speed_y + 200))
+
+            # === LEFT SIDE: NAVIGATION ===
+            nav_x = 120
+            nav_y = 350
+
+            # Navigation arrow (simple triangle pointing up/right)
+            arrow_points = [
+                (nav_x + 40, nav_y),
+                (nav_x + 70, nav_y + 30),
+                (nav_x + 40, nav_y + 60),
+                (nav_x + 45, nav_y + 30)
+            ]
+            pygame.draw.polygon(self.screen, accent_color, arrow_points)
+
+            # Distance to turn
+            dist_surf = fonts['header'].render("2.3 mi", True, accent_color)
+            self.screen.blit(dist_surf, (nav_x + 100, nav_y + 10))
+
+            # Direction
+            dir_surf = fonts['body'].render("Exit right onto I-90", True, COLOR_TEXT_PRIMARY)
+            self.screen.blit(dir_surf, (nav_x, nav_y + 90))
+
+            # Destination
+            dest_surf = fonts['small'].render("Destination: 123 Main St", True, COLOR_TEXT_SECONDARY)
+            self.screen.blit(dest_surf, (nav_x, nav_y + 140))
+
+            eta_surf = fonts['small'].render("ETA: 18 min", True, COLOR_TEXT_SECONDARY)
+            self.screen.blit(eta_surf, (nav_x, nav_y + 180))
+
+            # === BOTTOM: LANE & PROXIMITY ===
+            bottom_y = h - 180
+
+            # Blind spot indicators
+            left_status = "Vehicle" if scenario['mode'] == 'HIGHWAY' else "CLEAR"
+            right_status = "CLEAR"
+
+            left_color = COLOR_ACCENT_ORANGE if left_status == "Vehicle" else COLOR_ACCENT_GREEN
+            right_color = COLOR_ACCENT_GREEN
+
+            # Left blind spot
+            left_surf = fonts['small'].render(f"Left: {left_status}", True, left_color)
+            self.screen.blit(left_surf, (120, bottom_y))
+
+            # Forward collision
+            fwd_surf = fonts['small'].render("Forward: Clear", True, COLOR_ACCENT_GREEN)
+            self.screen.blit(fwd_surf, ((w - fwd_surf.get_width()) // 2, bottom_y))
+
+            # Right blind spot
+            right_surf = fonts['small'].render(f"Right: {right_status}", True, right_color)
+            self.screen.blit(right_surf, (w - 300, bottom_y))
+
+            # Lane guidance visual
+            lane_y = bottom_y + 60
+            lane_width = 600
+            lane_x = (w - lane_width) // 2
+
+            # Draw lane markers
+            pygame.draw.line(self.screen, COLOR_TEXT_SECONDARY,
+                           (lane_x, lane_y), (lane_x, lane_y + 40), 3)
+            pygame.draw.line(self.screen, COLOR_TEXT_SECONDARY,
+                           (lane_x + lane_width, lane_y), (lane_x + lane_width, lane_y + 40), 3)
+
+            # Center dashed line
+            for i in range(5):
+                dash_x = lane_x + lane_width // 2
+                dash_y = lane_y + i * 10
+                pygame.draw.line(self.screen, COLOR_TEXT_SECONDARY,
+                               (dash_x, dash_y), (dash_x, dash_y + 5), 2)
+
+            # Vehicle position indicator
+            car_x = lane_x + lane_width // 2 - 20
+            car_y = lane_y + 10
+            pygame.draw.rect(self.screen, accent_color, (car_x, car_y, 40, 20), border_radius=3)
+
+            # Alert overlay if applicable
+            if scenario['alert']:
+                alert_y = h - 280
+                alert_surf = fonts['body'].render(scenario['alert'], True, COLOR_ACCENT_ORANGE)
+                alert_w = alert_surf.get_width()
+                # Semi-transparent background
+                alert_bg = pygame.Surface((alert_w + 40, 60), pygame.SRCALPHA)
+                pygame.draw.rect(alert_bg, (0, 0, 0, 120), (0, 0, alert_w + 40, 60), border_radius=10)
+                self.screen.blit(alert_bg, ((w - alert_w - 40) // 2, alert_y - 10))
+                self.screen.blit(alert_surf, ((w - alert_w) // 2, alert_y))
+
+            # Footer status bar (minimal)
+            footer_y = h - 50
+            footer_surf = fonts['small'].render(
+                f"Consumer Mode · [TRANSPORT] · {remaining}s remaining",
+                True, accent_color
+            )
+            footer_w = footer_surf.get_width()
+            self.screen.blit(footer_surf, ((w - footer_w) // 2, footer_y))
+
+            pygame.display.flip()
             clock.tick(30)
 
     def get_status(self) -> dict:
