@@ -134,7 +134,7 @@ class EnterpriseRealm(SpatialRealm):
         print(f"  📅 Booking {room_id} for {duration} minutes")
         return True
 
-    def run(self, duration=15):
+    def run(self, duration=12):
         """Run pygame visual demo with unified Neon HUD theme"""
         if not self.screen:
             self.run_demo_cycle()

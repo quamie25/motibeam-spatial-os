@@ -130,7 +130,7 @@ REALMS_CONFIG = {
 SYSTEM_CONFIG = {
     "version": "MOS-1.0",
     "codename": "Kickstarter Demo",
-    "demo_cycle_duration": 15,  # seconds per realm in auto-demo (increased for better showcase)
+    "demo_cycle_duration": 12,  # seconds per realm (optimized for wall readability)
     "auto_loop_delay": 2,  # seconds between realms in auto-loop
     "max_sensor_refresh": 1.0,  # seconds
     "ai_processing_delay": 0.5  # seconds

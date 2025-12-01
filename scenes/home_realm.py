@@ -87,50 +87,35 @@ class HomeRealm(SpatialRealm):
         print("  Net: +2.6 kW (feeding grid)")
         print("  💰 Today's savings: $12.40")
 
-    def run(self, duration=15):
-        """Run pygame visual demo with unified Neon HUD theme"""
+    def run(self, duration=12):
+        """Run live HUD demo with two-column layout and scrolling ticker"""
         if not self.screen:
             self.run_demo_cycle()
             return
 
-        from scenes.theme_neon import render_realm_hud
+        from scenes.theme_neon import (
+            get_fonts, draw_background, draw_header,
+            draw_two_column_layout, draw_footer_ticker,
+            REALM_COLORS
+        )
 
         start_time = time.time()
         clock = pygame.time.Clock()
+        accent_color = REALM_COLORS.get('home', (100, 200, 255))
+        fonts = get_fonts(self.screen)
 
-        # Define content sections that rotate over time
-        content_sections = [
-            {
-                'title': 'MORNING ROUTINE AUTOMATION',
-                'items': [
-                    "Sarah waking up detected (6:45 AM)",
-                    "Bedroom lights: Gradual warm-up started",
-                    "Coffee maker: Brewing started",
-                    "Personalized news briefing ready",
-                    "47 smart devices synchronized"
-                ]
-            },
-            {
-                'title': 'FAMILY PRESENCE & ACTIVITY',
-                'items': [
-                    "Dad: Home Office (Focus Mode)",
-                    "Mom: Kitchen (Meal Prep)",
-                    "Kids: Playroom (Active Play)",
-                    "Adjusted lighting, climate, audio zones",
-                    "Activity patterns learned and optimized"
-                ]
-            },
-            {
-                'title': 'ENERGY & SECURITY OPTIMIZATION',
-                'items': [
-                    "Solar generation: 6.8 kW",
-                    "Current usage: 4.2 kW",
-                    "Net: +2.6 kW to grid",
-                    "All zones secured, no alerts",
-                    "Today's energy savings: $12.40"
-                ]
-            }
+        # Scrolling ticker updates
+        ticker_items = [
+            "Laundry done in 12m",
+            "Front door locked",
+            "Bedtime routine in 2h 15m",
+            "Thermostat adjusted to 68F",
+            "Living room lights dimmed",
+            "Coffee maker ready for 6:45 AM",
+            "Security system armed",
+            "Energy grid: selling 2.6 kW"
         ]
+        ticker_text = " · ".join(ticker_items) + " · "
 
         while time.time() - start_time < duration:
             for event in pygame.event.get():
@@ -141,18 +126,58 @@ class HomeRealm(SpatialRealm):
                         return
 
             elapsed = time.time() - start_time
+            remaining = int(duration - elapsed)
 
-            render_realm_hud(
-                screen=self.screen,
-                realm_id='home',
-                title='HOME REALM',
-                subtitle='Smart Home · Family · Ambient Living',
-                mode='Consumer Mode',
-                content_sections=content_sections,
-                elapsed=elapsed,
-                duration=duration
+            # Background with living motion
+            draw_background(self.screen, elapsed)
+
+            # Header band
+            draw_header(
+                self.screen, fonts, 'home',
+                'HOME REALM',
+                'Smart Home · Family · Ambient Living',
+                accent_color, "● LIVE"
             )
 
+            # Middle band - Two columns
+            left_section = {
+                'title': 'FAMILY PRESENCE',
+                'items': [
+                    "Dad: Home Office (Focus Mode)",
+                    "Mom: Kitchen (Meal Prep)",
+                    "Kids: Playroom (Active Play)",
+                    "",
+                    "47 devices synchronized",
+                    "All zones comfortable"
+                ]
+            }
+
+            right_section = {
+                'title': 'TODAY\'S AUTOMATIONS',
+                'items': [
+                    "Morning: Coffee + lights (6:45 AM)",
+                    "Midday: Climate optimization",
+                    "Evening: Dinner ambiance (6:30 PM)",
+                    "",
+                    "Energy: Solar 6.8 kW → Grid 2.6 kW",
+                    "Savings today: $12.40"
+                ]
+            }
+
+            draw_two_column_layout(
+                self.screen, fonts,
+                left_section, right_section,
+                y_start=250, accent_color=accent_color
+            )
+
+            # Bottom band - Scrolling ticker
+            draw_footer_ticker(
+                self.screen, fonts,
+                "Consumer Mode", remaining, 'home',
+                accent_color, ticker_text, elapsed
+            )
+
+            pygame.display.flip()
             clock.tick(30)
 
     def get_status(self) -> dict:

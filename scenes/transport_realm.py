@@ -87,7 +87,7 @@ class TransportRealm(SpatialRealm):
         print("  Supercharger nearby: 0.8 miles")
         print("  ✓ Route optimized for battery range")
 
-    def run(self, duration=15):
+    def run(self, duration=12):
         """Run pygame visual demo with unified Neon HUD theme"""
         if not self.screen:
             self.run_demo_cycle()

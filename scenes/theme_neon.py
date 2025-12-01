@@ -121,26 +121,28 @@ def render_icon(realm_id, size=72, color=(255, 255, 255)):
 
 def get_fonts(screen):
     """
-    Get scaled fonts for consistent HUD rendering
-    Returns dict with: mega, huge, title, subtitle, body, small
+    Get scaled fonts for wall-readable HUD (optimized for 8-10 feet viewing)
+    Returns dict with: mega, huge, title, subtitle, header, body, small
     """
     try:
         return {
-            'mega': pygame.font.Font(None, 120),
-            'huge': pygame.font.Font(None, 84),
-            'title': pygame.font.Font(None, 64),
-            'subtitle': pygame.font.Font(None, 48),
-            'body': pygame.font.Font(None, 36),
-            'small': pygame.font.Font(None, 28),
+            'mega': pygame.font.Font(None, 180),      # Extra large numbers/stats
+            'huge': pygame.font.Font(None, 120),      # Realm title (was 84)
+            'title': pygame.font.Font(None, 80),      # Major section titles (was 64)
+            'subtitle': pygame.font.Font(None, 56),   # Subtitle (was 48)
+            'header': pygame.font.Font(None, 68),     # Section headers (30-34 → 68)
+            'body': pygame.font.Font(None, 48),       # Body text (was 36, now 48 for 22-24px equivalent)
+            'small': pygame.font.Font(None, 36),      # Small text (was 28)
         }
     except:
         return {
-            'mega': pygame.font.SysFont('arial', 120, bold=True),
-            'huge': pygame.font.SysFont('arial', 84, bold=True),
-            'title': pygame.font.SysFont('arial', 64, bold=True),
-            'subtitle': pygame.font.SysFont('arial', 48),
-            'body': pygame.font.SysFont('arial', 36),
-            'small': pygame.font.SysFont('arial', 28),
+            'mega': pygame.font.SysFont('arial', 180, bold=True),
+            'huge': pygame.font.SysFont('arial', 120, bold=True),
+            'title': pygame.font.SysFont('arial', 80, bold=True),
+            'subtitle': pygame.font.SysFont('arial', 56),
+            'header': pygame.font.SysFont('arial', 68, bold=True),
+            'body': pygame.font.SysFont('arial', 48),
+            'small': pygame.font.SysFont('arial', 36),
         }
 
 # ============================================================================
@@ -149,28 +151,35 @@ def get_fonts(screen):
 
 def draw_background(screen, elapsed=0):
     """
-    Draw animated neon background with soft overlapping glow circles
+    Draw animated neon background with slow parallax drifting glow circles
+    Living wall motion - subtle and continuous
     """
     screen.fill(COLOR_BG)
 
     w, h = screen.get_size()
 
-    # Create animated glow circles
+    # Slow drifting glow circles with parallax motion
     circles = [
-        # x, y, base_radius, speed, color
-        (0.2, 0.3, 200, 0.3, (0, 100, 150, 20)),
-        (0.8, 0.2, 250, 0.5, (0, 150, 200, 15)),
-        (0.5, 0.7, 300, 0.4, (50, 100, 180, 18)),
-        (0.9, 0.8, 180, 0.6, (0, 120, 180, 22)),
+        # x, y, base_radius, speed, drift_x, drift_y, color (lower opacity for readability)
+        (0.2, 0.3, 200, 0.15, 0.02, 0.01, (0, 100, 150, 12)),
+        (0.8, 0.2, 250, 0.20, -0.015, 0.02, (0, 150, 200, 10)),
+        (0.5, 0.7, 300, 0.18, 0.01, -0.015, (50, 100, 180, 11)),
+        (0.9, 0.8, 180, 0.25, -0.02, -0.01, (0, 120, 180, 13)),
+        (0.1, 0.9, 220, 0.22, 0.018, 0.012, (80, 100, 200, 9)),
     ]
 
-    for cx, cy, base_r, speed, color in circles:
-        # Animate radius
-        radius = base_r + int(30 * math.sin(elapsed * speed))
+    for base_cx, base_cy, base_r, speed, drift_x, drift_y, color in circles:
+        # Subtle breathing animation
+        radius = base_r + int(20 * math.sin(elapsed * speed))
+
+        # Parallax drift (very slow)
+        cx = base_cx + drift_x * math.sin(elapsed * 0.1)
+        cy = base_cy + drift_y * math.cos(elapsed * 0.15)
+
         x = int(cx * w)
         y = int(cy * h)
 
-        # Draw glow circle (transparent)
+        # Draw glow circle (transparent, lower opacity)
         s = pygame.Surface((radius * 2, radius * 2), pygame.SRCALPHA)
         pygame.draw.circle(s, color, (radius, radius), radius)
         screen.blit(s, (x - radius, y - radius), special_flags=pygame.BLEND_ADD)
@@ -202,30 +211,46 @@ def draw_header(screen, fonts, realm_id, title, subtitle, accent_color, status_t
     status_w = status_surf.get_width()
     screen.blit(status_surf, (w - status_w - 50, 50))
 
-def draw_footer(screen, fonts, mode_label, seconds_remaining, realm_id, accent_color):
+def draw_footer_ticker(screen, fonts, mode_label, seconds_remaining, realm_id, accent_color, ticker_text="", elapsed=0):
     """
-    Draw bottom footer bar with:
-    - Left: Mode label (e.g., "Consumer Mode" / "Ops Mode")
-    - Center: Realm ID
-    - Right: Time remaining
+    Draw bottom footer bar with scrolling ticker:
+    - Top line: Mode label (left), realm ID (center), time (right)
+    - Bottom line: Scrolling ticker with live updates
     """
     w, h = screen.get_size()
-    y = h - 70
+    footer_y = h - 100  # Start higher to fit two lines
 
-    # Left: Mode label
+    # Top line - status bar
     mode_surf = fonts['small'].render(mode_label, True, accent_color)
-    screen.blit(mode_surf, (50, y))
+    screen.blit(mode_surf, (50, footer_y))
 
-    # Center: Realm tag
     realm_surf = fonts['small'].render(f"[{realm_id.upper()}]", True, COLOR_TEXT_SECONDARY)
     realm_w = realm_surf.get_width()
-    screen.blit(realm_surf, ((w - realm_w) // 2, y))
+    screen.blit(realm_surf, ((w - realm_w) // 2, footer_y))
 
-    # Right: Time remaining
     time_text = f"{seconds_remaining}s remaining"
     time_surf = fonts['small'].render(time_text, True, accent_color)
     time_w = time_surf.get_width()
-    screen.blit(time_surf, (w - time_w - 50, y))
+    screen.blit(time_surf, (w - time_w - 50, footer_y))
+
+    # Bottom line - scrolling ticker
+    if ticker_text:
+        ticker_y = footer_y + 45
+        # Draw semi-transparent background bar
+        ticker_bg = pygame.Surface((w, 50), pygame.SRCALPHA)
+        pygame.draw.rect(ticker_bg, (0, 0, 0, 80), (0, 0, w, 50))
+        screen.blit(ticker_bg, (0, ticker_y - 5))
+
+        # Render ticker text
+        ticker_surf = fonts['small'].render(ticker_text, True, COLOR_TEXT_SECONDARY)
+        ticker_w = ticker_surf.get_width()
+
+        # Scroll effect (moves right to left)
+        scroll_speed = 120  # pixels per second
+        offset = int(elapsed * scroll_speed) % (ticker_w + w)
+        x_pos = w - offset
+
+        screen.blit(ticker_surf, (x_pos, ticker_y))
 
 def draw_content_box(screen, fonts, title, items, y_start, accent_color, glow=True):
     """
@@ -260,6 +285,69 @@ def draw_content_box(screen, fonts, title, items, y_start, accent_color, glow=Tr
         item_surf = fonts['small'].render(item, True, COLOR_TEXT_PRIMARY)
         screen.blit(item_surf, (80, y))
         y += 45
+
+def draw_two_column_layout(screen, fonts, left_section, right_section, y_start, accent_color):
+    """
+    Draw full-width two-column layout for maximum screen usage
+
+    Args:
+        left_section: {'title': str, 'items': [str]}
+        right_section: {'title': str, 'items': [str]}
+        y_start: Y position to start
+        accent_color: Accent color
+    """
+    w, h = screen.get_size()
+    margin = 80  # Outer margins
+    col_spacing = 60  # Space between columns
+    col_width = (w - 2 * margin - col_spacing) // 2
+
+    # Left column
+    left_x = margin
+    title_surf = fonts['header'].render(left_section['title'], True, accent_color)
+    screen.blit(title_surf, (left_x, y_start))
+
+    y = y_start + 85
+    for item in left_section['items']:
+        item_surf = fonts['body'].render(item, True, COLOR_TEXT_PRIMARY)
+        screen.blit(item_surf, (left_x + 20, y))
+        y += 60  # Increased line spacing for wall readability
+
+    # Right column
+    right_x = margin + col_width + col_spacing
+    title_surf = fonts['header'].render(right_section['title'], True, accent_color)
+    screen.blit(title_surf, (right_x, y_start))
+
+    y = y_start + 85
+    for item in right_section['items']:
+        item_surf = fonts['body'].render(item, True, COLOR_TEXT_PRIMARY)
+        screen.blit(item_surf, (right_x + 20, y))
+        y += 60
+
+def draw_full_width_content(screen, fonts, title, items, y_start, accent_color):
+    """
+    Draw full-width content section (85-90% of screen width)
+
+    Args:
+        screen: pygame screen
+        fonts: font dict
+        title: Section title
+        items: List of content items
+        y_start: Y position
+        accent_color: Accent color
+    """
+    w, h = screen.get_size()
+    margin = int(w * 0.07)  # 7% margins = 86% content width
+
+    # Title
+    title_surf = fonts['header'].render(title, True, accent_color)
+    screen.blit(title_surf, (margin, y_start))
+
+    # Items with increased line spacing
+    y = y_start + 85
+    for item in items:
+        item_surf = fonts['body'].render(item, True, COLOR_TEXT_PRIMARY)
+        screen.blit(item_surf, (margin + 20, y))
+        y += 60  # Increased from 45 for better readability
 
 def draw_live_indicator(screen, elapsed, x, y, color):
     """

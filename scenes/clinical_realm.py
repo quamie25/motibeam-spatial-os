@@ -86,7 +86,7 @@ class ClinicalRealm(SpatialRealm):
         print("  ✓ Appointment scheduled: Dr. Smith (Thu 2:00 PM)")
         print("  ✓ Lab results: Normal range (uploaded to portal)")
 
-    def run(self, duration=15):
+    def run(self, duration=12):
         """Run pygame visual demo with unified Neon HUD theme"""
         if not self.screen:
             self.run_demo_cycle()
