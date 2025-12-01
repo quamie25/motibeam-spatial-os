@@ -1,0 +1,8 @@
+# MotiBeam Spatial OS Dependencies
+
+# Main graphics library
+pygame>=2.5.0
+
+# Optional: For future enhancements
+# numpy>=1.24.0  # For advanced calculations
+# requests>=2.31.0  # For API data fetching
