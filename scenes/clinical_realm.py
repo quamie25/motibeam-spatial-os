@@ -87,49 +87,33 @@ class ClinicalRealm(SpatialRealm):
         print("  ✓ Lab results: Normal range (uploaded to portal)")
 
     def run(self, duration=12):
-        """Run pygame visual demo with unified Neon HUD theme"""
+        """Run ambient care dashboard with wellness score and vitals"""
         if not self.screen:
             self.run_demo_cycle()
             return
 
-        from scenes.theme_neon import render_realm_hud
+        from scenes.theme_neon import (
+            get_fonts, draw_background, draw_header,
+            draw_footer_ticker, REALM_COLORS, COLOR_TEXT_PRIMARY,
+            COLOR_ACCENT_GREEN, COLOR_ACCENT_ORANGE
+        )
 
         start_time = time.time()
         clock = pygame.time.Clock()
+        accent_color = REALM_COLORS.get('clinical', (100, 255, 200))
+        fonts = get_fonts(self.screen)
+        w, h = self.screen.get_size()
 
-        # Define content sections that rotate over time
-        content_sections = [
-            {
-                'title': 'CONTINUOUS VITAL MONITORING',
-                'items': [
-                    "Heart Rate: 68 bpm (Normal)",
-                    "Blood Pressure: 118/76 mmHg (Optimal)",
-                    "SpO2: 98% (Excellent)",
-                    "Sleep Score: 87/100",
-                    "All vitals within healthy range"
-                ]
-            },
-            {
-                'title': 'ACTIVITY & FITNESS TRACKING',
-                'items': [
-                    "Steps: 8,240 / 10,000 (82% complete)",
-                    "Active Minutes: 45 min",
-                    "Calories burned: 420 kcal",
-                    "On track to meet daily goals",
-                    "Exercise recommendation: 15min walk"
-                ]
-            },
-            {
-                'title': 'PREDICTIVE HEALTH AI',
-                'items': [
-                    "Irregular sleep pattern detected (3 days)",
-                    "Recommendation: Earlier bedtime (10:30 PM)",
-                    "Predicted wellness improvement: +8%",
-                    "Medication reminder: 8:00 PM today",
-                    "Next checkup: Dr. Smith (Thu 2:00 PM)"
-                ]
-            }
+        # Ticker for gentle reminders
+        ticker_items = [
+            "Next checkup: Dr. Smith Thu 2:00 PM",
+            "Medication due: 8:00 PM tonight",
+            "Sleep quality: 87/100 (excellent)",
+            "Hydration reminder: Drink water",
+            "Activity goal: 8,240/10,000 steps (82%)",
+            "Heart rate trending: Normal range all day"
         ]
+        ticker_text = " · ".join(ticker_items) + " · "
 
         while time.time() - start_time < duration:
             for event in pygame.event.get():
@@ -140,18 +124,102 @@ class ClinicalRealm(SpatialRealm):
                         return
 
             elapsed = time.time() - start_time
+            remaining = int(duration - elapsed)
 
-            render_realm_hud(
-                screen=self.screen,
-                realm_id='clinical',
-                title='CLINICAL REALM',
-                subtitle='Health Monitoring · Wellness · Medical AI',
-                mode='Consumer Mode',
-                content_sections=content_sections,
-                elapsed=elapsed,
-                duration=duration
+            # Background
+            draw_background(self.screen, elapsed)
+
+            # Header
+            draw_header(
+                self.screen, fonts, 'clinical',
+                'CLINICAL REALM',
+                'Health Monitoring · Wellness · Medical AI',
+                accent_color, "● LIVE"
             )
 
+            # === MIDDLE BAND: Three-section layout ===
+            y_top = 250
+            margin = 100
+
+            # CENTER: Big Wellness Score
+            wellness_score = 87
+            # Color based on score
+            if wellness_score >= 80:
+                score_color = COLOR_ACCENT_GREEN
+            elif wellness_score >= 60:
+                score_color = COLOR_ACCENT_ORANGE
+            else:
+                score_color = (255, 100, 100)
+
+            # Draw wellness score in center
+            score_text = str(wellness_score)
+            score_surf = fonts['mega'].render(score_text, True, score_color)
+            score_w = score_surf.get_width()
+            score_x = (w - score_w) // 2
+            self.screen.blit(score_surf, (score_x, y_top + 100))
+
+            # Label below score
+            label_surf = fonts['header'].render("WELLNESS SCORE", True, accent_color)
+            label_w = label_surf.get_width()
+            self.screen.blit(label_surf, ((w - label_w) // 2, y_top + 300))
+
+            # LEFT: Vitals
+            left_x = margin
+            left_y = y_top + 50
+
+            vitals_title = fonts['header'].render("KEY VITALS", True, accent_color)
+            self.screen.blit(vitals_title, (left_x, left_y))
+
+            left_y += 90
+            vitals = [
+                ("Heart Rate", "68 bpm", COLOR_ACCENT_GREEN),
+                ("Blood Pressure", "118/76", COLOR_ACCENT_GREEN),
+                ("SpO₂", "98%", COLOR_ACCENT_GREEN),
+                ("", "", None),  # Spacer
+                ("Sleep Score", "87/100", accent_color),
+            ]
+
+            for label, value, color in vitals:
+                if label:  # Skip spacers
+                    label_surf = fonts['body'].render(label, True, COLOR_TEXT_PRIMARY)
+                    self.screen.blit(label_surf, (left_x, left_y))
+
+                    value_surf = fonts['body'].render(value, True, color if color else accent_color)
+                    self.screen.blit(value_surf, (left_x + 350, left_y))
+                left_y += 60
+
+            # RIGHT: Medication Schedule
+            right_x = w - margin - 600
+            right_y = y_top + 50
+
+            meds_title = fonts['header'].render("MEDICATIONS", True, accent_color)
+            self.screen.blit(meds_title, (right_x, right_y))
+
+            right_y += 90
+            medications = [
+                ("8:00 PM Tonight", "Blood pressure med"),
+                ("Tomorrow 8:00 AM", "Vitamin D"),
+                ("Tomorrow 12:00 PM", "Lunch supplement"),
+                ("Tomorrow 8:00 PM", "Blood pressure med"),
+            ]
+
+            for time_str, med_name in medications:
+                time_surf = fonts['body'].render(time_str, True, accent_color)
+                self.screen.blit(time_surf, (right_x, right_y))
+                right_y += 50
+
+                med_surf = fonts['body'].render(med_name, True, COLOR_TEXT_PRIMARY)
+                self.screen.blit(med_surf, (right_x + 20, right_y))
+                right_y += 60
+
+            # Bottom ticker
+            draw_footer_ticker(
+                self.screen, fonts,
+                "Consumer Mode", remaining, 'clinical',
+                accent_color, ticker_text, elapsed
+            )
+
+            pygame.display.flip()
             clock.tick(30)
 
     def get_status(self) -> dict:
