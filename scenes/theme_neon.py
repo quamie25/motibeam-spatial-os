@@ -5,6 +5,7 @@ Unified visual theme for all realms (consumer + ops)
 
 import pygame
 import math
+import os
 
 # ============================================================================
 # COLOR PALETTE
@@ -31,18 +32,88 @@ REALM_COLORS = {
     'maritime': (100, 220, 255),   # Aqua
 }
 
-# ASCII fallback symbols (no emoji)
+# Realm symbols with emoji and ASCII fallbacks
 REALM_SYMBOLS = {
-    'home': '[H]',
-    'clinical': '[+]',
-    'education': '[E]',
-    'transport': '[T]',
-    'emergency': '[!]',
-    'security': '[S]',
-    'enterprise': '[B]',
-    'aviation': '[A]',
-    'maritime': '[M]',
+    'home': {'emoji': '🏡', 'fallback': '[H]'},
+    'clinical': {'emoji': '⚕️', 'fallback': '[+]'},
+    'education': {'emoji': '📚', 'fallback': '[E]'},
+    'transport': {'emoji': '🚗', 'fallback': '[T]'},
+    'emergency': {'emoji': '🚨', 'fallback': '[!]'},
+    'security': {'emoji': '🛡️', 'fallback': '[S]'},
+    'enterprise': {'emoji': '🏢', 'fallback': '[B]'},
+    'aviation': {'emoji': '✈️', 'fallback': '[A]'},
+    'maritime': {'emoji': '⚓', 'fallback': '[M]'},
 }
+
+# ============================================================================
+# EMOJI FONT LOADING
+# ============================================================================
+
+# Global emoji font cache
+_EMOJI_FONT = None
+_EMOJI_FONT_AVAILABLE = False
+
+def load_emoji_font(size=72):
+    """
+    Load NotoColorEmoji font for proper emoji rendering
+    Returns: (font, is_emoji_font) tuple
+    """
+    global _EMOJI_FONT, _EMOJI_FONT_AVAILABLE
+
+    # Try to load emoji font
+    emoji_font_paths = [
+        '/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf',
+        '/usr/share/fonts/truetype/noto-emoji/NotoColorEmoji.ttf',
+        '/usr/share/fonts/google-noto-emoji/NotoColorEmoji.ttf',
+    ]
+
+    for font_path in emoji_font_paths:
+        if os.path.exists(font_path):
+            try:
+                _EMOJI_FONT = pygame.font.Font(font_path, size)
+                _EMOJI_FONT_AVAILABLE = True
+                print(f"✓ Emoji font loaded: {font_path}")
+                return _EMOJI_FONT, True
+            except Exception as e:
+                print(f"✗ Failed to load emoji font {font_path}: {e}")
+                pass
+
+    # Fallback to default font
+    print("⚠ Emoji font not available, using ASCII fallbacks")
+    try:
+        _EMOJI_FONT = pygame.font.Font(None, size)
+        _EMOJI_FONT_AVAILABLE = False
+        return _EMOJI_FONT, False
+    except:
+        _EMOJI_FONT = pygame.font.SysFont('arial', size)
+        _EMOJI_FONT_AVAILABLE = False
+        return _EMOJI_FONT, False
+
+def render_icon(realm_id, size=72, color=(255, 255, 255)):
+    """
+    Render realm icon with emoji font support
+    Returns pygame surface with the icon
+    """
+    symbol_data = REALM_SYMBOLS.get(realm_id, {'emoji': '?', 'fallback': '[?]'})
+
+    # Load emoji font if not already loaded
+    if _EMOJI_FONT is None:
+        load_emoji_font(size)
+
+    # Try to render with emoji
+    if _EMOJI_FONT_AVAILABLE:
+        try:
+            return _EMOJI_FONT.render(symbol_data['emoji'], True, color)
+        except:
+            pass
+
+    # Fallback to ASCII
+    try:
+        font = pygame.font.Font(None, size)
+    except:
+        font = pygame.font.SysFont('arial', size, bold=True)
+
+    return font.render(symbol_data['fallback'], True, color)
 
 # ============================================================================
 # FONT HELPERS
@@ -107,19 +178,20 @@ def draw_background(screen, elapsed=0):
 def draw_header(screen, fonts, realm_id, title, subtitle, accent_color, status_text="● LIVE"):
     """
     Draw top header bar with:
-    - Top-left: [Symbol] TITLE
+    - Top-left: Icon TITLE
     - Below: Subtitle
     - Top-right: Status indicator (● LIVE / ● ACTIVE / etc)
     """
     w, h = screen.get_size()
 
-    # Get realm symbol
-    symbol = REALM_SYMBOLS.get(realm_id, '[?]')
+    # Render icon (emoji or fallback)
+    icon_surf = render_icon(realm_id, size=72, color=accent_color)
+    screen.blit(icon_surf, (50, 40))
 
-    # Title (top-left)
-    title_text = f"{symbol} {title}"
-    title_surf = fonts['huge'].render(title_text, True, COLOR_TEXT_PRIMARY)
-    screen.blit(title_surf, (50, 40))
+    # Title (top-left, offset by icon width)
+    icon_width = icon_surf.get_width()
+    title_surf = fonts['huge'].render(title, True, COLOR_TEXT_PRIMARY)
+    screen.blit(title_surf, (50 + icon_width + 20, 40))
 
     # Subtitle (below title)
     subtitle_surf = fonts['subtitle'].render(subtitle, True, accent_color)
@@ -262,6 +334,18 @@ def get_realm_accent_color(realm_id):
     """Get the accent color for a specific realm"""
     return REALM_COLORS.get(realm_id, COLOR_ACCENT_CYAN)
 
-def get_realm_symbol(realm_id):
-    """Get the ASCII symbol for a specific realm"""
-    return REALM_SYMBOLS.get(realm_id, '[?]')
+def get_realm_symbol(realm_id, prefer_emoji=True):
+    """
+    Get the symbol for a specific realm
+    Args:
+        realm_id: Realm identifier
+        prefer_emoji: If True, return emoji; if False, return ASCII fallback
+    Returns:
+        Symbol string
+    """
+    symbol_data = REALM_SYMBOLS.get(realm_id, {'emoji': '?', 'fallback': '[?]'})
+
+    if prefer_emoji and _EMOJI_FONT_AVAILABLE:
+        return symbol_data['emoji']
+    else:
+        return symbol_data['fallback']

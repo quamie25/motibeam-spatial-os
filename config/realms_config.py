@@ -3,17 +3,18 @@ MotiBeam Spatial OS - Realms Configuration
 Configuration for all available realms in the system
 """
 
-# ASCII symbol fallbacks (no emoji dependencies)
+# Realm symbols with emoji and ASCII fallbacks
+# Note: Actual rendering handled by theme_neon.py with emoji font support
 REALM_SYMBOLS = {
-    'home': '[H]',         # Home
-    'clinical': '[+]',     # Clinical/Medical
-    'education': '[E]',    # Education
-    'transport': '[T]',    # Transport
-    'emergency': '[!]',    # Emergency/Alert
-    'security': '[S]',     # Security
-    'enterprise': '[B]',   # Business
-    'aviation': '[A]',     # Aviation
-    'maritime': '[M]',     # Maritime
+    'home': {'emoji': '🏡', 'fallback': '[H]'},
+    'clinical': {'emoji': '⚕️', 'fallback': '[+]'},
+    'education': {'emoji': '📚', 'fallback': '[E]'},
+    'transport': {'emoji': '🚗', 'fallback': '[T]'},
+    'emergency': {'emoji': '🚨', 'fallback': '[!]'},
+    'security': {'emoji': '🛡️', 'fallback': '[S]'},
+    'enterprise': {'emoji': '🏢', 'fallback': '[B]'},
+    'aviation': {'emoji': '✈️', 'fallback': '[A]'},
+    'maritime': {'emoji': '⚓', 'fallback': '[M]'},
 }
 
 # REALM ORDER FOR AUTO-DEMO: Consumer realms first, then ops realms
