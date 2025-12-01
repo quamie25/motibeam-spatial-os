@@ -410,7 +410,7 @@ def render_realm_hud(screen, realm_id, title, subtitle, mode, content_sections, 
 
     # Footer
     seconds_remaining = int(duration - elapsed)
-    draw_footer(screen, fonts, mode, seconds_remaining, realm_id, accent_color)
+    draw_footer_ticker(screen, fonts, mode, seconds_remaining, realm_id, accent_color, "", elapsed)
 
     pygame.display.flip()
 
