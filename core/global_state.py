@@ -29,7 +29,7 @@ class GlobalState:
     def __init__(self):
         self.mode = GlobalMode.NORMAL
         self.theme = ThemeStyle.NEON
-        self.fullscreen = False
+        self.fullscreen = True  # Start in fullscreen for projection systems
 
     def cycle_mode(self):
         """Cycle to next global mode."""

@@ -21,12 +21,13 @@ class HomeRealm(SpatialRealm):
     def __init__(self, screen, theme, global_state):
         super().__init__(screen, theme, global_state)
 
-        # Initialize custom fonts for wall readability
+        # Initialize custom fonts for wall readability (upgraded sizes)
         pygame.font.init()
-        self.title_font = pygame.font.SysFont("Arial", 60, bold=True)
-        self.subtitle_font = pygame.font.SysFont("Arial", 34, bold=False)
-        self.body_font = pygame.font.SysFont("Arial", 32)
-        self.label_font = pygame.font.SysFont("Arial", 26)
+        self.title_font = pygame.font.SysFont("Arial", 72, bold=True)
+        self.subtitle_font = pygame.font.SysFont("Arial", 40, bold=False)
+        self.body_font = pygame.font.SysFont("Arial", 36, bold=True)
+        self.label_font = pygame.font.SysFont("Arial", 30)
+        self.emoji_font = pygame.font.SysFont(None, 80)
 
         # Sample data
         self.family_members = [
@@ -51,6 +52,14 @@ class HomeRealm(SpatialRealm):
         # View emoji mapping
         self.view_emojis = ["🏠", "📹", "🎛️", "🌙"]
 
+        # Animated breathing circles (positioned dynamically based on screen size)
+        w, h = self.screen.get_width(), self.screen.get_height()
+        self.circles = [
+            {"x": w * 0.65, "y": h * 0.35, "base_r": 90, "r": 90, "dr": 0.25},
+            {"x": w * 0.75, "y": h * 0.50, "base_r": 130, "r": 130, "dr": -0.2},
+            {"x": w * 0.70, "y": h * 0.65, "base_r": 110, "r": 110, "dr": 0.18},
+        ]
+
     @property
     def realm_name(self) -> str:
         return "HOME"
@@ -66,6 +75,17 @@ class HomeRealm(SpatialRealm):
             {"name": "Scenes & Routines", "render": self.render_scenes_routines},
             {"name": "Ambient Loop", "render": self.render_ambient_loop},
         ]
+
+    def update(self):
+        """Update animations - breathing circles."""
+        super().update()
+
+        # Animate circle radii (breathing effect)
+        for circle in self.circles:
+            circle["r"] += circle["dr"]
+            # Reverse direction if we hit the limits
+            if circle["r"] > circle["base_r"] + 15 or circle["r"] < circle["base_r"] - 15:
+                circle["dr"] *= -1
 
     def on_interact(self):
         """Simulate doorbell/Ring event."""
@@ -87,6 +107,9 @@ class HomeRealm(SpatialRealm):
         # Background effects
         if self.global_state.should_show_animations():
             self.draw_background_effects()
+
+        # Breathing circles
+        self.draw_breathing_circles()
 
         # Custom header with emoji
         self.draw_custom_header()
@@ -132,15 +155,36 @@ class HomeRealm(SpatialRealm):
         footer_y = int(h * 0.92)
         self.screen.blit(footer_surf, (footer_x, footer_y))
 
+    def draw_breathing_circles(self):
+        """Draw animated breathing circles in the background."""
+        if not self.global_state.should_show_animations():
+            return
+
+        brightness = self.global_state.get_brightness_multiplier()
+        # Neon cyan circles with low alpha
+        circle_color = tuple(int(c * brightness * 0.4) for c in (0, 200, 255))
+
+        for circle in self.circles:
+            # Draw circle with thin border
+            pygame.draw.circle(
+                self.screen,
+                circle_color,
+                (int(circle["x"]), int(circle["y"])),
+                int(circle["r"]),
+                3  # Border width
+            )
+
     def render_home_overview(self):
-        """View 1: Home Overview - Family, Devices, Today."""
+        """View 1: Home Overview - 2-column layout with stats."""
         w, h = self.screen.get_width(), self.screen.get_height()
         brightness = self.global_state.get_brightness_multiplier()
         color = tuple(int(c * brightness) for c in (255, 255, 255))
 
-        left_margin = int(w * 0.12)
+        # Left column: 35% width, text blocks
+        left_margin = int(w * 0.08)
+        left_col_width = int(w * 0.35)
         top = int(h * 0.25)
-        line_h = 40
+        line_h = 48
 
         y = top
 
@@ -152,51 +196,75 @@ class HomeRealm(SpatialRealm):
 
         for member in self.family_members:
             line = f"  {member['emoji']} {member['name']} – {member['location']}"
-            line_surf = self.body_font.render(line, True, color)
+            line_surf = self.label_font.render(line, True, color)
             self.screen.blit(line_surf, (left_margin + 40, y))
             y += line_h
 
-        y += 30
+        y += 40
 
         # Section: Devices
-        section_text = "🔌 Devices"
+        section_text = "🔌 Smart Devices"
         section_surf = self.body_font.render(section_text, True, tuple(int(c * 0.9) for c in (100, 200, 255)))
         self.screen.blit(section_surf, (left_margin, y))
         y += line_h + 20
 
         for device in self.devices:
             line = f"  {device['emoji']} {device['name']} – {device['status']}"
-            line_surf = self.body_font.render(line, True, color)
+            line_surf = self.label_font.render(line, True, color)
             self.screen.blit(line_surf, (left_margin + 40, y))
             y += line_h
 
-        y += 30
+        y += 40
 
         # Section: Today
-        section_text = "📅 Today"
+        section_text = "📅 Today's Items"
         section_surf = self.body_font.render(section_text, True, tuple(int(c * 0.9) for c in (100, 200, 255)))
         self.screen.blit(section_surf, (left_margin, y))
         y += line_h + 20
 
         for item in self.today_items:
             line = f"  {item['emoji']} {item['text']}"
-            line_surf = self.body_font.render(line, True, color)
+            line_surf = self.label_font.render(line, True, color)
             self.screen.blit(line_surf, (left_margin + 40, y))
             y += line_h
+
+        # Right column: 60% width, large stats cards
+        right_col_x = int(w * 0.50)
+        right_col_width = int(w * 0.42)
+        right_y = top
+
+        # Stats: Home Status
+        stats = [
+            {"emoji": "🏠", "label": "Rooms Active", "value": "3 of 8"},
+            {"emoji": "🔒", "label": "Security", "value": "All Locked"},
+            {"emoji": "📹", "label": "Cameras", "value": "2 Online"},
+            {"emoji": "📦", "label": "Deliveries", "value": "1 Today"},
+            {"emoji": "🌡️", "label": "Climate", "value": "72°F Eco"},
+            {"emoji": "🌙", "label": "Quiet Hours", "value": "10PM–6AM"},
+        ]
+
+        for stat in stats:
+            # Draw stat card
+            card_height = 60
+            stat_text = f"{stat['emoji']}  {stat['label']}: {stat['value']}"
+            stat_surf = self.label_font.render(stat_text, True, color)
+            self.screen.blit(stat_surf, (right_col_x, right_y))
+            right_y += card_height + 15
 
         # Show doorbell event if recent
         if self.doorbell_event and (time.time() - self.last_doorbell_time < 8):
             self.draw_doorbell_overlay()
 
     def render_camera_deliveries(self):
-        """View 2: Cameras & Deliveries - Security feed events."""
+        """View 2: Cameras & Deliveries - 2-column card layout."""
         w, h = self.screen.get_width(), self.screen.get_height()
         brightness = self.global_state.get_brightness_multiplier()
         color = tuple(int(c * brightness) for c in (255, 255, 255))
 
-        left_margin = int(w * 0.12)
+        # Left column: Cameras
+        left_margin = int(w * 0.08)
         top = int(h * 0.25)
-        line_h = 40
+        line_h = 50
 
         y = top
 
@@ -213,11 +281,11 @@ class HomeRealm(SpatialRealm):
         ]
 
         for line in cam_info:
-            line_surf = self.body_font.render(line, True, color)
+            line_surf = self.label_font.render(line, True, color)
             self.screen.blit(line_surf, (left_margin + 40, y))
             y += line_h
 
-        y += 30
+        y += 40
 
         # Section: Recent Events
         section_text = "📋 Recent Events"
@@ -232,85 +300,108 @@ class HomeRealm(SpatialRealm):
         ]
 
         for event in events:
-            event_surf = self.body_font.render(event, True, color)
+            event_surf = self.label_font.render(event, True, color)
             self.screen.blit(event_surf, (left_margin + 40, y))
             y += line_h
 
-        y += 30
+        # Right column: Deliveries
+        right_col_x = int(w * 0.50)
+        right_y = top
 
-        # Section: Deliveries
         section_text = "🚚 Deliveries Today"
         section_surf = self.body_font.render(section_text, True, tuple(int(c * 0.9) for c in (100, 200, 255)))
-        self.screen.blit(section_surf, (left_margin, y))
-        y += line_h + 20
+        self.screen.blit(section_surf, (right_col_x, right_y))
+        right_y += line_h + 20
 
         deliveries = [
-            "  📦 Amazon - Expected 2:00 PM",
-            "  📮 USPS - Delivered at 10:24 AM",
+            {"emoji": "📦", "carrier": "Amazon", "status": "Expected 2:00 PM"},
+            {"emoji": "📮", "carrier": "USPS", "status": "Delivered 10:24 AM"},
+            {"emoji": "📦", "carrier": "FedEx", "status": "Out for delivery"},
         ]
 
         for delivery in deliveries:
-            delivery_surf = self.body_font.render(delivery, True, color)
-            self.screen.blit(delivery_surf, (left_margin + 40, y))
-            y += line_h
+            delivery_line = f"  {delivery['emoji']} {delivery['carrier']}"
+            delivery_surf = self.label_font.render(delivery_line, True, color)
+            self.screen.blit(delivery_surf, (right_col_x + 40, right_y))
+            right_y += 40
+
+            status_line = f"     {delivery['status']}"
+            status_surf = self.label_font.render(status_line, True, tuple(int(c * 0.6) for c in color))
+            self.screen.blit(status_surf, (right_col_x + 40, right_y))
+            right_y += line_h + 10
 
     def render_scenes_routines(self):
-        """View 3: Scenes & Routines - Quick actions."""
+        """View 3: Scenes & Routines - Larger scene cards."""
         w, h = self.screen.get_width(), self.screen.get_height()
         brightness = self.global_state.get_brightness_multiplier()
         color = tuple(int(c * brightness) for c in (255, 255, 255))
 
-        left_margin = int(w * 0.12)
+        # Center the scene cards
+        center_x = int(w * 0.15)
         top = int(h * 0.25)
-        line_h = 50
+        line_h = 60
 
         y = top
 
         # Section title
-        section_text = "🎛️ Quick Scenes"
+        section_text = "🎛️ Quick Scenes & Routines"
         section_surf = self.body_font.render(section_text, True, tuple(int(c * 0.9) for c in (100, 200, 255)))
-        self.screen.blit(section_surf, (left_margin, y))
-        y += line_h + 30
+        self.screen.blit(section_surf, (center_x, y))
+        y += line_h + 40
 
         scenes = [
-            {"icon": "🌅", "name": "Morning Boost", "desc": "Lights, coffee, blinds up"},
+            {"icon": "🌅", "name": "Morning Boost", "desc": "Lights on, coffee maker, blinds up"},
             {"icon": "🎬", "name": "Movie Night", "desc": "Dim lights, close blinds, sound on"},
-            {"icon": "📚", "name": "Study Focus", "desc": "Focus lighting, quiet mode"},
+            {"icon": "📚", "name": "Study Focus", "desc": "Focus lighting, quiet mode, no distractions"},
             {"icon": "🛫", "name": "Travel / Away", "desc": "Lock all, cameras active, eco mode"},
         ]
 
         for scene in scenes:
-            # Scene name with icon
-            scene_line = f"  {scene['icon']} {scene['name']}"
+            # Scene name with icon (larger)
+            scene_line = f"  {scene['icon']}  {scene['name']}"
             scene_surf = self.body_font.render(scene_line, True, color)
-            self.screen.blit(scene_surf, (left_margin + 40, y))
+            self.screen.blit(scene_surf, (center_x + 40, y))
             y += line_h
 
-            # Description (smaller, indented)
-            desc_line = f"     {scene['desc']}"
+            # Description (indented, dimmer)
+            desc_line = f"       {scene['desc']}"
             desc_surf = self.label_font.render(desc_line, True, tuple(int(c * 0.6) for c in color))
-            self.screen.blit(desc_surf, (left_margin + 40, y))
-            y += line_h + 10
+            self.screen.blit(desc_surf, (center_x + 40, y))
+            y += line_h + 20
 
     def render_ambient_loop(self):
-        """View 4: Ambient Loop - Minimal status."""
+        """View 4: Ambient Loop - Large centered status display."""
         w, h = self.screen.get_width(), self.screen.get_height()
         brightness = self.global_state.get_brightness_multiplier()
         color = tuple(int(c * brightness) for c in (255, 255, 255))
 
-        # Big clock in center
+        # Big centered emoji
+        emoji_text = "🏡"
+        emoji_surf = self.emoji_font.render(emoji_text, True, color)
+        emoji_x = (w - emoji_surf.get_width()) // 2
+        emoji_y = int(h * 0.30)
+        self.screen.blit(emoji_surf, (emoji_x, emoji_y))
+
+        # Big clock below emoji
         current_time = time.strftime("%I:%M %p")
         time_surf = self.title_font.render(current_time, True, color)
         time_x = (w - time_surf.get_width()) // 2
-        time_y = int(h * 0.35)
+        time_y = emoji_y + 120
         self.screen.blit(time_surf, (time_x, time_y))
 
-        # Status line below
-        status_text = "🏡 All systems normal"
+        # Status line
+        status_text = "All systems secure • 3 rooms active"
         status_surf = self.subtitle_font.render(status_text, True, tuple(int(c * 0.7) for c in color))
         status_x = (w - status_surf.get_width()) // 2
         status_y = time_y + 100
         self.screen.blit(status_surf, (status_x, status_y))
+
+        # Date line
+        current_date = time.strftime("%A, %B %d, %Y")
+        date_surf = self.label_font.render(current_date, True, tuple(int(c * 0.5) for c in color))
+        date_x = (w - date_surf.get_width()) // 2
+        date_y = status_y + 70
+        self.screen.blit(date_surf, (date_x, date_y))
 
     def draw_doorbell_overlay(self):
         """Draw doorbell event overlay (right side)."""

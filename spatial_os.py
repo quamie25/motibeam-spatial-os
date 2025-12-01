@@ -29,10 +29,12 @@ class RealmLauncher:
     def __init__(self):
         pygame.init()
 
-        # Setup display
-        self.screen_width = 1920
-        self.screen_height = 1080
-        self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
+        # Setup display - get actual screen size and use borderless fullscreen
+        info = pygame.display.Info()
+        flags = pygame.FULLSCREEN | pygame.NOFRAME
+        self.screen = pygame.display.set_mode((info.current_w, info.current_h), flags)
+        self.screen_width = info.current_w
+        self.screen_height = info.current_h
         pygame.display.set_caption("MotiBeam Spatial OS v0.1")
 
         # Initialize theme and global state
@@ -82,14 +84,15 @@ class RealmLauncher:
 
                     elif event.key == pygame.K_f:
                         self.global_state.toggle_fullscreen()
+                        info = pygame.display.Info()
                         if self.global_state.fullscreen:
-                            self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
-                            self.screen_width = self.screen.get_width()
-                            self.screen_height = self.screen.get_height()
+                            flags = pygame.FULLSCREEN | pygame.NOFRAME
+                            size = (info.current_w, info.current_h)
                         else:
-                            self.screen_width = 1920
-                            self.screen_height = 1080
-                            self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
+                            flags = 0
+                            size = (int(info.current_w * 0.8), int(info.current_h * 0.8))
+                        self.screen = pygame.display.set_mode(size, flags)
+                        self.screen_width, self.screen_height = size
 
                     elif event.key in [pygame.K_UP, pygame.K_w]:
                         self.selected_row = (self.selected_row - 1) % self.grid_rows
