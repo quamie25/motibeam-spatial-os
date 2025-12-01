@@ -48,13 +48,22 @@ class SpatialAutoDemo:
         self.screen = None
         self.clock = pygame.time.Clock()
 
-        # Display setup
+        # Display setup with true borderless fullscreen (no Pi desktop bar)
+        self.display_info = pygame.display.Info()
         if self.fullscreen:
-            self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
-            logger.info(f"Fullscreen mode: {self.screen.get_size()}")
+            # True fullscreen: borderless, no frame, no desktop bar
+            flags = pygame.FULLSCREEN | pygame.NOFRAME
+            self.screen = pygame.display.set_mode(
+                (self.display_info.current_w, self.display_info.current_h),
+                flags
+            )
+            logger.info(f"True fullscreen mode (borderless): {self.screen.get_size()}")
         else:
-            self.screen = pygame.display.set_mode((1920, 1080))
-            logger.info("Windowed mode: 1920x1080")
+            # Windowed mode: 80% of display size
+            windowed_w = int(self.display_info.current_w * 0.8)
+            windowed_h = int(self.display_info.current_h * 0.8)
+            self.screen = pygame.display.set_mode((windowed_w, windowed_h))
+            logger.info(f"Windowed mode (80%): {windowed_w}x{windowed_h}")
 
         pygame.display.set_caption("MotiBeam Spatial OS - Auto Demo")
 
@@ -217,6 +226,12 @@ class SpatialAutoDemo:
                                 logger.info("User requested quit")
                                 self.running = False
                                 break
+                            elif event.key == pygame.K_f:
+                                # Toggle fullscreen
+                                self.toggle_fullscreen()
+                                # Update screen reference for all loaded realms
+                                for realm in self.realm_instances.values():
+                                    realm.screen = self.screen
 
                     if not self.running:
                         break
@@ -240,6 +255,28 @@ class SpatialAutoDemo:
 
         finally:
             self.shutdown()
+
+    def toggle_fullscreen(self):
+        """Toggle between fullscreen and windowed mode"""
+        self.fullscreen = not self.fullscreen
+
+        if self.fullscreen:
+            # Switch to true borderless fullscreen
+            flags = pygame.FULLSCREEN | pygame.NOFRAME
+            self.screen = pygame.display.set_mode(
+                (self.display_info.current_w, self.display_info.current_h),
+                flags
+            )
+            logger.info(f"Switched to fullscreen mode: {self.screen.get_size()}")
+        else:
+            # Switch to windowed mode (80% of display)
+            windowed_w = int(self.display_info.current_w * 0.8)
+            windowed_h = int(self.display_info.current_h * 0.8)
+            self.screen = pygame.display.set_mode((windowed_w, windowed_h))
+            logger.info(f"Switched to windowed mode: {windowed_w}x{windowed_h}")
+
+        # Update dimensions
+        self.width, self.height = self.screen.get_size()
 
     def shutdown(self):
         """Clean shutdown"""
@@ -269,6 +306,7 @@ def main():
 
 Controls:
   ESC or Q - Exit demo
+  F - Toggle fullscreen/windowed mode
 
 Starting in 2 seconds...
 """)
