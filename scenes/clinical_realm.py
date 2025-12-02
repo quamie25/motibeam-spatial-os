@@ -132,8 +132,8 @@ class ClinicalRealm(SpatialRealm):
             # Header
             draw_header(
                 self.screen, fonts, 'clinical',
-                'CLINICAL REALM',
-                'Health Monitoring · Wellness · Medical AI',
+                '⚕️ CLINICAL REALM',
+                '🏥 Health Monitoring · 💊 Wellness · 🧬 Medical AI',
                 accent_color, "● LIVE"
             )
 

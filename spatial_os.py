@@ -18,7 +18,7 @@ import pygame
 import importlib
 import logging
 
-from core.global_state import global_state
+from core.global_state import global_state, get_emoji_font
 from config.realms_config import REALMS_CONFIG
 
 # Setup logging
@@ -82,7 +82,7 @@ class SpatialOSLauncher:
         """Get realm display information"""
         realm_data = {
             'home': {'name': 'Home', 'emoji': '🏡', 'subtitle': 'Smart Living'},
-            'clinical': {'name': 'Clinical', 'emoji': '🩺', 'subtitle': 'Health & Wellness'},
+            'clinical': {'name': 'Clinical', 'emoji': '⚕️', 'subtitle': 'Health & Wellness'},
             'education': {'name': 'Education', 'emoji': '📚', 'subtitle': 'Learning & Focus'},
             'transport': {'name': 'Transport', 'emoji': '🚗', 'subtitle': 'Automotive HUD'},
             'emergency': {'name': 'Emergency', 'emoji': '🚨', 'subtitle': '911 Dispatch'},
@@ -168,12 +168,8 @@ class SpatialOSLauncher:
         pygame.draw.rect(tile_surf, theme['accent_base'], (0, 0, w, h), border_width, border_radius=15)
         self.screen.blit(tile_surf, (x, y))
 
-        # Emoji icon
-        try:
-            emoji_font = pygame.font.Font(None, 120)
-        except:
-            emoji_font = pygame.font.SysFont('arial', 120)
-
+        # Emoji icon - using proper emoji font
+        emoji_font = get_emoji_font(120)
         emoji_surf = emoji_font.render(info['emoji'], True, theme['primary'])
         emoji_rect = emoji_surf.get_rect(center=(x + w // 2, y + h // 2 - 30))
         self.screen.blit(emoji_surf, emoji_rect)

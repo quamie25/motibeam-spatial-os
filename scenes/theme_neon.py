@@ -6,6 +6,7 @@ Unified visual theme for all realms (consumer + ops)
 import pygame
 import math
 import os
+from core.global_state import get_emoji_font
 
 # ============================================================================
 # COLOR PALETTE
@@ -96,24 +97,9 @@ def render_icon(realm_id, size=72, color=(255, 255, 255)):
     """
     symbol_data = REALM_SYMBOLS.get(realm_id, {'emoji': '?', 'fallback': '[?]'})
 
-    # Load emoji font if not already loaded
-    if _EMOJI_FONT is None:
-        load_emoji_font(size)
-
-    # Try to render with emoji
-    if _EMOJI_FONT_AVAILABLE:
-        try:
-            return _EMOJI_FONT.render(symbol_data['emoji'], True, color)
-        except:
-            pass
-
-    # Fallback to ASCII
-    try:
-        font = pygame.font.Font(None, size)
-    except:
-        font = pygame.font.SysFont('arial', size, bold=True)
-
-    return font.render(symbol_data['fallback'], True, color)
+    # Use centralized emoji font
+    emoji_font = get_emoji_font(size)
+    return emoji_font.render(symbol_data['emoji'], True, color)
 
 # ============================================================================
 # FONT HELPERS
@@ -190,17 +176,31 @@ def draw_header(screen, fonts, realm_id, title, subtitle, accent_color, status_t
     - Top-left: Icon TITLE
     - Below: Subtitle
     - Top-right: Status indicator (● LIVE / ● ACTIVE / etc)
+
+    Note: Title should include emoji (e.g., "🏡 HOME REALM")
+    This function will render the entire title with proper emoji support
     """
     w, h = screen.get_size()
 
-    # Render icon (emoji or fallback)
-    icon_surf = render_icon(realm_id, size=72, color=accent_color)
-    screen.blit(icon_surf, (50, 40))
+    # Split title into emoji and text for proper rendering
+    # Titles like "🏡 HOME REALM" will be split
+    if len(title) > 2 and title[0] in '🏡⚕📚🚗🚨🛡🏢✈⚓🩺️':
+        emoji = title[0]
+        text_part = title[1:].strip()
 
-    # Title (top-left, offset by icon width)
-    icon_width = icon_surf.get_width()
-    title_surf = fonts['huge'].render(title, True, COLOR_TEXT_PRIMARY)
-    screen.blit(title_surf, (50 + icon_width + 20, 40))
+        # Render emoji with emoji font
+        emoji_font = get_emoji_font(80)
+        icon_surf = emoji_font.render(emoji, True, accent_color)
+        screen.blit(icon_surf, (50, 35))
+
+        # Render text part
+        icon_width = icon_surf.get_width()
+        title_surf = fonts['huge'].render(text_part, True, COLOR_TEXT_PRIMARY)
+        screen.blit(title_surf, (50 + icon_width + 20, 40))
+    else:
+        # No emoji, just render title
+        title_surf = fonts['huge'].render(title, True, COLOR_TEXT_PRIMARY)
+        screen.blit(title_surf, (50, 40))
 
     # Subtitle (below title)
     subtitle_surf = fonts['subtitle'].render(subtitle, True, accent_color)

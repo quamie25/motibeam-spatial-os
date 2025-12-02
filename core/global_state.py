@@ -3,6 +3,49 @@ MotiBeam Spatial OS - Global State Manager
 Manages global mode (Normal/Study/Sleep) and theme (Neon/Minimal/Night)
 """
 
+import pygame
+import os
+
+
+# ============================================================================
+# EMOJI FONT LOADING
+# ============================================================================
+
+_EMOJI_FONT_CACHE = {}
+
+def get_emoji_font(size=72):
+    """
+    Get emoji font for proper emoji rendering
+    Returns: pygame.font.Font object
+    """
+    if size in _EMOJI_FONT_CACHE:
+        return _EMOJI_FONT_CACHE[size]
+
+    # Try to load NotoColorEmoji font
+    emoji_font_paths = [
+        '/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf',
+        '/usr/share/fonts/truetype/noto-emoji/NotoColorEmoji.ttf',
+        '/usr/share/fonts/google-noto-emoji/NotoColorEmoji.ttf',
+    ]
+
+    for font_path in emoji_font_paths:
+        if os.path.exists(font_path):
+            try:
+                font = pygame.font.Font(font_path, size)
+                _EMOJI_FONT_CACHE[size] = font
+                return font
+            except Exception:
+                pass
+
+    # Fallback to default font (won't render emojis perfectly but won't crash)
+    try:
+        font = pygame.font.Font(None, size)
+    except:
+        font = pygame.font.SysFont('arial', size)
+
+    _EMOJI_FONT_CACHE[size] = font
+    return font
+
 
 class GlobalState:
     """Singleton global state for MotiBeam Spatial OS"""

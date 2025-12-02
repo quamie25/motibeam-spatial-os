@@ -265,8 +265,8 @@ class EmergencyRealm(SpatialRealm):
             # Draw header
             draw_header(
                 screen, fonts, 'emergency',
-                '[E] EMERGENCY RESPONSE',
-                '911 Dispatch · Crisis Management · Medical AI',
+                '🚨 EMERGENCY RESPONSE',
+                '🚑 911 Dispatch · ⚠️ Crisis Management · 🏥 Medical AI',
                 accent_color, "● LIVE"
             )
 

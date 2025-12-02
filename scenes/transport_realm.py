@@ -136,8 +136,8 @@ class TransportRealm(SpatialRealm):
             # Header (minimal for HUD)
             draw_header(
                 self.screen, fonts, 'transport',
-                'TRANSPORT REALM',
-                'Automotive HUD · Navigation · Driver Assistance',
+                '🚗 TRANSPORT REALM',
+                '🛣️ Automotive HUD · 🗺️ Navigation · 🚦 Driver Assistance',
                 accent_color, "● LIVE"
             )
 
