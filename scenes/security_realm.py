@@ -8,6 +8,7 @@ import time
 from datetime import datetime
 from core.base_realm import SpatialRealm
 from core.spatial_engine import SpatialEngine, BeamNetworkProtocol
+from core.global_state import global_state
 
 import pygame
 
@@ -15,18 +16,19 @@ import pygame
 class SecurityRealm(SpatialRealm):
     """Security, surveillance, and access control realm"""
 
-    def __init__(self, standalone=False):
+    def __init__(self, screen=None, global_state_ref=None, standalone=False, **kwargs):
         super().__init__(
             realm_name="Security & Surveillance Realm",
             realm_description="Perimeter Defense, Access Control, Threat Detection"
         )
+        self.screen = screen
+        self.global_state = global_state_ref if global_state_ref is not None else global_state
+        self.standalone = standalone
         self.spatial_engine = SpatialEngine()
         self.beam_network = BeamNetworkProtocol()
         self.security_zones = []
         self.access_points = []
         self.detected_threats = []
-        self.screen = None
-        self.standalone = standalone
 
     def initialize(self) -> bool:
         """Initialize security systems"""

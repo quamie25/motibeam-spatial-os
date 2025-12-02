@@ -8,6 +8,7 @@ import time
 from datetime import datetime
 from core.base_realm import SpatialRealm
 from core.spatial_engine import SpatialEngine, BeamNetworkProtocol
+from core.global_state import global_state
 
 import pygame
 
@@ -15,11 +16,14 @@ import pygame
 class AviationRealm(SpatialRealm):
     """Aviation control and flight safety realm"""
 
-    def __init__(self, standalone=False):
+    def __init__(self, screen=None, global_state_ref=None, standalone=False, **kwargs):
         super().__init__(
             realm_name="Aviation Control Realm",
             realm_description="Air Traffic Control, Cockpit Integration, Flight Safety"
         )
+        self.screen = screen
+        self.global_state = global_state_ref if global_state_ref is not None else global_state
+        self.standalone = standalone
         self.spatial_engine = SpatialEngine()
         self.beam_network = BeamNetworkProtocol()
         self.active_flights = []

@@ -9,6 +9,7 @@ import math
 from datetime import datetime
 from core.base_realm import SpatialRealm
 from core.spatial_engine import SpatialEngine, BeamNetworkProtocol
+from core.global_state import global_state
 
 import pygame
 
@@ -16,17 +17,18 @@ import pygame
 class EmergencyRealm(SpatialRealm):
     """Emergency response and crisis management realm"""
 
-    def __init__(self, standalone=False):
+    def __init__(self, screen=None, global_state_ref=None, standalone=False, **kwargs):
         super().__init__(
             realm_name="Emergency Response Realm",
             realm_description="911 Dispatch, Crisis Response, Medical Emergency Management"
         )
+        self.screen = screen
+        self.global_state = global_state_ref if global_state_ref is not None else global_state
+        self.standalone = standalone
         self.spatial_engine = SpatialEngine()
         self.beam_network = BeamNetworkProtocol()
         self.active_incidents = []
         self.emergency_units = []
-        self.screen = None
-        self.standalone = standalone
 
     def initialize(self) -> bool:
         """Initialize emergency response systems"""

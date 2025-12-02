@@ -341,9 +341,12 @@ class SpatialOSLauncher:
             module = importlib.import_module(module_path)
             realm_class = getattr(module, class_name)
 
-            # Instantiate
-            realm = realm_class(standalone=False)
-            realm.screen = self.screen
+            # Instantiate with consistent interface
+            realm = realm_class(
+                screen=self.screen,
+                global_state_ref=global_state,
+                standalone=False
+            )
             realm.initialize()
 
             # Cache

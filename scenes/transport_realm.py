@@ -8,6 +8,7 @@ import time
 from datetime import datetime
 from core.base_realm import SpatialRealm
 from core.spatial_engine import SpatialEngine, BeamNetworkProtocol
+from core.global_state import global_state
 
 import pygame
 
@@ -15,17 +16,18 @@ import pygame
 class TransportRealm(SpatialRealm):
     """Automotive and transport ambient computing realm"""
 
-    def __init__(self, standalone=False):
+    def __init__(self, screen=None, global_state_ref=None, standalone=False, **kwargs):
         super().__init__(
             realm_name="Transport Realm",
             realm_description="Automotive HUD, Navigation, Driver Assistance"
         )
+        self.screen = screen
+        self.global_state = global_state_ref if global_state_ref is not None else global_state
+        self.standalone = standalone
         self.spatial_engine = SpatialEngine()
         self.beam_network = BeamNetworkProtocol()
         self.vehicles = []
         self.routes = []
-        self.screen = None
-        self.standalone = standalone
 
     def initialize(self) -> bool:
         """Initialize transport realm systems"""
