@@ -173,12 +173,13 @@ def draw_background(screen, elapsed=0):
 def draw_header(screen, fonts, realm_id, title, subtitle, accent_color, status_text="● LIVE"):
     """
     Draw top header bar with:
-    - Top-left: Icon TITLE
+    - Top-left: Large Emoji + TITLE
     - Below: Subtitle
     - Top-right: Status indicator (● LIVE / ● ACTIVE / etc)
 
     Note: Title should include emoji (e.g., "🏡 HOME REALM")
     This function will render the entire title with proper emoji support
+    Enhanced with larger emoji and subtle glow
     """
     w, h = screen.get_size()
 
@@ -188,15 +189,26 @@ def draw_header(screen, fonts, realm_id, title, subtitle, accent_color, status_t
         emoji = title[0]
         text_part = title[1:].strip()
 
-        # Render emoji with emoji font
-        emoji_font = get_emoji_font(80)
-        icon_surf = emoji_font.render(emoji, True, accent_color)
-        screen.blit(icon_surf, (50, 35))
+        # Subtle glow behind emoji (breathing effect)
+        t = pygame.time.get_ticks() / 1000.0
+        glow_pulse = 0.6 + 0.4 * math.sin(t * 0.6)
+        glow_radius = int(50 + 10 * glow_pulse)
+        glow_alpha = int(30 * glow_pulse)
 
-        # Render text part
+        glow_surf = pygame.Surface((glow_radius * 2, glow_radius * 2), pygame.SRCALPHA)
+        pygame.draw.circle(glow_surf, (*accent_color, glow_alpha),
+                          (glow_radius, glow_radius), glow_radius)
+        screen.blit(glow_surf, (70 - glow_radius, 65 - glow_radius))
+
+        # Render emoji with larger emoji font for prominence
+        emoji_font = get_emoji_font(100)  # Increased from 80
+        icon_surf = emoji_font.render(emoji, True, accent_color)
+        screen.blit(icon_surf, (45, 25))
+
+        # Render text part (aligned vertically with emoji baseline)
         icon_width = icon_surf.get_width()
         title_surf = fonts['huge'].render(text_part, True, COLOR_TEXT_PRIMARY)
-        screen.blit(title_surf, (50 + icon_width + 20, 40))
+        screen.blit(title_surf, (45 + icon_width + 25, 40))
     else:
         # No emoji, just render title
         title_surf = fonts['huge'].render(title, True, COLOR_TEXT_PRIMARY)

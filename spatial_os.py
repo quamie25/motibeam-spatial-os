@@ -17,6 +17,8 @@ import os
 import pygame
 import importlib
 import logging
+import math
+from datetime import datetime
 
 from core.global_state import global_state, get_emoji_font
 from config.realms_config import REALMS_CONFIG
@@ -148,8 +150,11 @@ class SpatialOSLauncher:
         # Status bar at bottom
         self.draw_status_bar(theme, status_font)
 
+        # Live date/time in top-right corner
+        self.draw_live_datetime(theme, mode_config)
+
     def draw_tile(self, x, y, w, h, realm_id, is_selected, theme, mode_config):
-        """Draw a single realm tile"""
+        """Draw a single realm tile with enhanced emoji and glow"""
         info = self.get_realm_info(realm_id)
 
         # Tile background
@@ -168,27 +173,45 @@ class SpatialOSLauncher:
         pygame.draw.rect(tile_surf, theme['accent_base'], (0, 0, w, h), border_width, border_radius=15)
         self.screen.blit(tile_surf, (x, y))
 
-        # Emoji icon - using proper emoji font
-        emoji_font = get_emoji_font(120)
+        # Breathing glow animation for emoji
+        t = pygame.time.get_ticks() / 1000.0
+        glow_pulse = 0.5 + 0.5 * math.sin(t * 0.8)  # Slow breathing pulse
+
+        # Theme-aware glow color
+        glow_intensity = mode_config['animation_intensity'] * glow_pulse
+        glow_alpha = int(40 * glow_intensity)
+
+        # Draw emoji glow halo (behind emoji)
+        emoji_center_x = x + w // 2
+        emoji_center_y = y + h // 2 - 40
+        glow_radius = int(60 + 15 * glow_pulse)
+
+        glow_surf = pygame.Surface((glow_radius * 2, glow_radius * 2), pygame.SRCALPHA)
+        pygame.draw.circle(glow_surf, (*theme['accent_base'], glow_alpha),
+                          (glow_radius, glow_radius), glow_radius)
+        self.screen.blit(glow_surf, (emoji_center_x - glow_radius, emoji_center_y - glow_radius))
+
+        # Emoji icon - larger and more prominent
+        emoji_font = get_emoji_font(140)  # Increased from 120
         emoji_surf = emoji_font.render(info['emoji'], True, theme['primary'])
-        emoji_rect = emoji_surf.get_rect(center=(x + w // 2, y + h // 2 - 30))
+        emoji_rect = emoji_surf.get_rect(center=(emoji_center_x, emoji_center_y))
         self.screen.blit(emoji_surf, emoji_rect)
 
-        # Realm name
+        # Realm name - positioned lower to accommodate larger emoji
         try:
-            name_font = pygame.font.Font(None, 48)
+            name_font = pygame.font.Font(None, 52)  # Slightly larger
             sub_font = pygame.font.Font(None, 32)
         except:
-            name_font = pygame.font.SysFont('arial', 48, bold=True)
+            name_font = pygame.font.SysFont('arial', 52, bold=True)
             sub_font = pygame.font.SysFont('arial', 32)
 
         name_surf = name_font.render(info['name'], True, theme['primary'])
-        name_rect = name_surf.get_rect(center=(x + w // 2, y + h - 60))
+        name_rect = name_surf.get_rect(center=(x + w // 2, y + h - 70))
         self.screen.blit(name_surf, name_rect)
 
         # Subtitle
         sub_surf = sub_font.render(info['subtitle'], True, theme['secondary'])
-        sub_rect = sub_surf.get_rect(center=(x + w // 2, y + h - 25))
+        sub_rect = sub_surf.get_rect(center=(x + w // 2, y + h - 30))
         self.screen.blit(sub_surf, sub_rect)
 
     def draw_background_circles(self, mode_config):
@@ -237,6 +260,39 @@ class SpatialOSLauncher:
         controls_surf = font.render(controls_text, True, theme['secondary'])
         controls_rect = controls_surf.get_rect(right=self.width - 50, centery=y)
         self.screen.blit(controls_surf, controls_rect)
+
+    def draw_live_datetime(self, theme, mode_config):
+        """Draw live date and time in top-right corner"""
+        now = datetime.now()
+        date_str = now.strftime("%a • %b %d")
+        time_str = now.strftime("%I:%M %p").lstrip("0")
+
+        # Mode-aware brightness
+        text_brightness = mode_config['text_brightness']
+        date_color = tuple(int(c * text_brightness) for c in theme['secondary'])
+        time_color = tuple(int(c * text_brightness) for c in theme['primary'])
+
+        # Fonts - readable but not dominating
+        try:
+            date_font = pygame.font.Font(None, 42)
+            time_font = pygame.font.Font(None, 56)
+        except:
+            date_font = pygame.font.SysFont('arial', 42)
+            time_font = pygame.font.SysFont('arial', 56, bold=True)
+
+        # Position in top-right corner
+        margin = 50
+        y_start = 40
+
+        # Time (larger, on top)
+        time_surf = time_font.render(time_str, True, time_color)
+        time_rect = time_surf.get_rect(topright=(self.width - margin, y_start))
+        self.screen.blit(time_surf, time_rect)
+
+        # Date (below time)
+        date_surf = date_font.render(date_str, True, date_color)
+        date_rect = date_surf.get_rect(topright=(self.width - margin, y_start + 60))
+        self.screen.blit(date_surf, date_rect)
 
     def handle_navigation(self, key):
         """Handle arrow key / WASD navigation"""
