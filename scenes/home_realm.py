@@ -207,28 +207,28 @@ class HomeRealm(SpatialRealm):
 
             # Middle band - Four rotating views
             if current_view == 0:
-                # View 1: Home Overview
+                # View 1: Family Presence & Status
                 left_section = {
-                    'title': '👨‍👩‍👧‍👦 FAMILY PRESENCE',
+                    'title': '👨‍👩‍👧 FAMILY PRESENCE',
                     'items': [
                         "👨 Dad: Home Office (Focus Mode)",
                         "👩 Mom: Kitchen (Meal Prep)",
-                        "👧👦 Kids: Playroom (Active Play)",
+                        "🧒 Kids: Playroom (Active Play)",
                         "",
-                        "📱 Devices online: 47",
-                        "🏠 Today summary: All zones comfortable"
+                        "",
+                        ""
                     ]
                 }
 
                 right_section = {
-                    'title': '🏡 SMART HOME STATUS',
+                    'title': '🔐 SMART HOME STATUS',
                     'items': [
-                        "🔒 Locks: All secured",
-                        "📹 Cameras online: 2",
+                        "📶 Devices online: 47",
                         "📦 Deliveries today: 1",
                         "🌙 Quiet hours: 10:00 PM – 6:00 AM",
+                        "🚪 Rooms active: 3",
                         "",
-                        "⚡ Rooms active: 3"
+                        ""
                     ]
                 }
 
@@ -238,71 +238,78 @@ class HomeRealm(SpatialRealm):
                     'title': '⚡ ENERGY MANAGEMENT',
                     'items': [
                         "☀️ Solar generation: 6.8 kW",
-                        "🏠 Current usage: 4.2 kW",
-                        "🔋 Net: +2.6 kW (feeding grid)",
+                        "🔌 Current usage: 4.2 kW",
+                        "↔️ Net: +2.6 kW (feeding grid)",
                         "",
                         "💰 Today's savings: $12.40",
-                        "📊 This month: $287.50"
+                        "📅 This month: $287.50"
                     ]
                 }
 
                 right_section = {
                     'title': '🌡️ CLIMATE & COMFORT',
                     'items': [
-                        "Living Room: 72°F (optimal)",
-                        "Bedroom: 68°F (sleep mode)",
-                        "Office: 70°F (focus mode)",
+                        "🛋️ Living Room: 72°F (normal)",
+                        "🛏️ Bedroom: 68°F (sleep)",
+                        "💻 Office: 70°F (focus mode)",
                         "",
-                        "Air quality: Excellent",
-                        "Humidity: 45% (ideal)"
+                        "🌬️ Air quality: Excellent",
+                        "💧 Humidity: 45% (ideal)"
                     ]
                 }
 
             elif current_view == 2:
-                # View 3: Automation Routines
+                # View 3: Scenes & Routines
                 left_section = {
-                    'title': '⏰ TODAY\'S AUTOMATIONS',
+                    'title': '🎬 SMART SCENES',
                     'items': [
-                        "☕ 6:45 AM - Morning routine",
-                        "  Coffee + gradual lights",
-                        "🌞 12:00 PM - Climate optimization",
-                        "🍽️ 6:30 PM - Dinner ambiance",
-                        "🌙 10:00 PM - Bedtime routine"
-                    ]
-                }
-
-                right_section = {
-                    'title': '🔐 SECURITY EVENTS',
-                    'items': [
-                        "📦 3:42 PM - USPS delivery",
-                        "  Package logged & notified",
-                        "🚗 4:15 PM - Garage opened",
-                        "  Mom arrived home",
-                        "✅ All zones secure"
-                    ]
-                }
-
-            else:
-                # View 4: Ambient Loop (Large centered display)
-                left_section = {
-                    'title': '🌅 AMBIENT MODE',
-                    'items': [
+                        "🌅 Morning Boost",
+                        "  Lights warm · Coffee on · News brief",
                         "",
-                        "🏡 All systems nominal",
-                        "👨‍👩‍👧‍👦 Family home & comfortable",
-                        "⚡ Energy: Optimal",
-                        "🔒 Security: All clear",
+                        "📚 Study Mode",
+                        "  Distraction-free · Notifications low",
                         ""
                     ]
                 }
 
                 right_section = {
-                    'title': '⏰ UPCOMING',
+                    'title': '⚙️ AUTOMATION MODES',
+                    'items': [
+                        "🎬 Movie Night",
+                        "  Lights dim · Speakers on · Do Not Disturb",
+                        "",
+                        "✈️ Away / Travel",
+                        "  Security armed · Random lights · Package alerts",
+                        ""
+                    ]
+                }
+
+            else:
+                # View 4: Ambient Loop (Centered status display)
+                # Get current date/time
+                now = datetime.now()
+                weekday = now.strftime("%A")
+                current_time = now.strftime("%I:%M %p").lstrip("0")
+
+                left_section = {
+                    'title': '🏡 HOME STATUS',
                     'items': [
                         "",
-                        "🍽️ Dinner prep in 45 minutes",
-                        "🌙 Bedtime routine in 2h 15m",
-                        "☕ Coffee ready tomorrow 6:45 AM",
+                        "🏡 Home Secure · All doors locked · Quiet hours",
+                        "",
+                        f"📅 {weekday} · {current_time}",
+                        "",
+                        ""
+                    ]
+                }
+
+                right_section = {
+                    'title': '✨ AMBIENT',
+                    'items': [
+                        "",
+                        "👨‍👩‍👧 Family home & comfortable",
+                        "",
+                        "⚡ Energy: Optimal",
                         "",
                         ""
                     ]
