@@ -156,7 +156,7 @@ class HomeRealm(SpatialRealm):
                     elif event.key == pygame.K_SPACE:
                         show_event = True
                         event_time = time.time()
-                        event_text = "🔔 Front doorbell rang! 📦 Package detected"
+                        event_text = "[!] Front doorbell rang! Package detected"
 
             elapsed = time.time() - start_time
             remaining = int(duration - elapsed)
@@ -211,11 +211,11 @@ class HomeRealm(SpatialRealm):
             if current_view == 0:
                 # View 1: Family Presence & Status
                 left_section = {
-                    'title': '👨‍👩‍👧 FAMILY PRESENCE',
+                    'title': 'FAMILY PRESENCE',
                     'items': [
-                        "👨 Dad: Home Office (Focus Mode)",
-                        "👩 Mom: Kitchen (Meal Prep)",
-                        "🧒 Kids: Playroom (Active Play)",
+                        "• Dad: Home Office (Focus Mode)",
+                        "• Mom: Kitchen (Meal Prep)",
+                        "• Kids: Playroom (Active Play)",
                         "",
                         "",
                         ""
@@ -223,12 +223,12 @@ class HomeRealm(SpatialRealm):
                 }
 
                 right_section = {
-                    'title': '🔐 SMART HOME STATUS',
+                    'title': 'SMART HOME STATUS',
                     'items': [
-                        "📶 Devices online: 47",
-                        "📦 Deliveries today: 1",
-                        "🌙 Quiet hours: 10:00 PM – 6:00 AM",
-                        "🚪 Rooms active: 3",
+                        "• Devices online: 47",
+                        "• Deliveries today: 1",
+                        "• Quiet hours: 10:00 PM – 6:00 AM",
+                        "• Rooms active: 3",
                         "",
                         ""
                     ]
@@ -237,50 +237,50 @@ class HomeRealm(SpatialRealm):
             elif current_view == 1:
                 # View 2: Energy & Climate
                 left_section = {
-                    'title': '⚡ ENERGY MANAGEMENT',
+                    'title': 'ENERGY MANAGEMENT',
                     'items': [
-                        "☀️ Solar generation: 6.8 kW",
-                        "🔌 Current usage: 4.2 kW",
-                        "↔️ Net: +2.6 kW (feeding grid)",
+                        "• Solar generation: 6.8 kW",
+                        "• Current usage: 4.2 kW",
+                        "• Net: +2.6 kW (feeding grid)",
                         "",
-                        "💰 Today's savings: $12.40",
-                        "📅 This month: $287.50"
+                        "• Today's savings: $12.40",
+                        "• This month: $287.50"
                     ]
                 }
 
                 right_section = {
-                    'title': '🌡️ CLIMATE & COMFORT',
+                    'title': 'CLIMATE & COMFORT',
                     'items': [
-                        "🛋️ Living Room: 72°F (normal)",
-                        "🛏️ Bedroom: 68°F (sleep)",
-                        "💻 Office: 70°F (focus mode)",
+                        "• Living Room: 72°F (normal)",
+                        "• Bedroom: 68°F (sleep)",
+                        "• Office: 70°F (focus mode)",
                         "",
-                        "🌬️ Air quality: Excellent",
-                        "💧 Humidity: 45% (ideal)"
+                        "• Air quality: Excellent",
+                        "• Humidity: 45% (ideal)"
                     ]
                 }
 
             elif current_view == 2:
                 # View 3: Scenes & Routines
                 left_section = {
-                    'title': '🎬 SMART SCENES',
+                    'title': 'SMART SCENES',
                     'items': [
-                        "🌅 Morning Boost",
+                        "[Morning Boost]",
                         "  Lights warm · Coffee on · News brief",
                         "",
-                        "📚 Study Mode",
+                        "[Study Mode]",
                         "  Distraction-free · Notifications low",
                         ""
                     ]
                 }
 
                 right_section = {
-                    'title': '⚙️ AUTOMATION MODES',
+                    'title': 'AUTOMATION MODES',
                     'items': [
-                        "🎬 Movie Night",
+                        "[Movie Night]",
                         "  Lights dim · Speakers on · Do Not Disturb",
                         "",
-                        "✈️ Away / Travel",
+                        "[Away / Travel]",
                         "  Security armed · Random lights · Package alerts",
                         ""
                     ]
@@ -294,24 +294,24 @@ class HomeRealm(SpatialRealm):
                 current_time = now.strftime("%I:%M %p").lstrip("0")
 
                 left_section = {
-                    'title': '🏡 HOME STATUS',
+                    'title': 'HOME STATUS',
                     'items': [
                         "",
-                        "🏡 Home Secure · All doors locked · Quiet hours",
+                        "Home Secure · All doors locked · Quiet hours",
                         "",
-                        f"📅 {weekday} · {current_time}",
+                        f"{weekday} · {current_time}",
                         "",
                         ""
                     ]
                 }
 
                 right_section = {
-                    'title': '✨ AMBIENT',
+                    'title': 'AMBIENT',
                     'items': [
                         "",
-                        "👨‍👩‍👧 Family home & comfortable",
+                        "Family home & comfortable",
                         "",
-                        "⚡ Energy: Optimal",
+                        "Energy: Optimal",
                         "",
                         ""
                     ]
