@@ -6,88 +6,33 @@ Initializes pygame and launches realms with shared global state
 
 import pygame
 import sys
-from core.global_state import global_state
-from scenes.home_realm import HomeRealm
-from scenes.clinical_realm import ClinicalRealm
-from scenes.education_realm import EducationRealm
-from scenes.security_realm import SecurityRealm
-from scenes.emergency_realm import EmergencyRealm
-from scenes.transport_realm import TransportRealm
+import logging
+import importlib
+from core.global_state import global_state, get_emoji_font
+from config.realms_config import REALMS_CONFIG
 
-
-# Realm registry with factory functions
-REALMS = {
-    "home": {
-        "label": "🏡 Home",
-        "factory": lambda screen, clock, gs: HomeRealm(
-            screen,
-            clock,
-            global_state=gs,
-            standalone=False,
-        ),
-    },
-    "clinical": {
-        "label": "⚕️ Clinical",
-        "factory": lambda screen, clock, gs: ClinicalRealm(
-            screen,
-            clock,
-            global_state=gs,
-            standalone=False,
-        ),
-    },
-    "education": {
-        "label": "📚 Education",
-        "factory": lambda screen, clock, gs: EducationRealm(
-            screen,
-            clock,
-            global_state=gs,
-            standalone=False,
-        ),
-    },
-    "security": {
-        "label": "🔒 Security",
-        "factory": lambda screen, clock, gs: SecurityRealm(
-            screen,
-            clock,
-            global_state=gs,
-            standalone=False,
-        ),
-    },
-    "emergency": {
-        "label": "🚨 Emergency",
-        "factory": lambda screen, clock, gs: EmergencyRealm(
-            screen,
-            clock,
-            global_state=gs,
-            standalone=False,
-        ),
-    },
-    "transport": {
-        "label": "🚗 Transport",
-        "factory": lambda screen, clock, gs: TransportRealm(
-            screen,
-            clock,
-            global_state=gs,
-            standalone=False,
-        ),
-    },
-}
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(levelname)s: %(message)s'
+)
 
 
 class SpatialOSLauncher:
     def __init__(self):
         pygame.init()
+        pygame.display.set_caption("MotiBeam Spatial OS v2.0")
+
         self.screen = pygame.display.set_mode((1280, 720))
-        pygame.display.set_caption("MotiBeam Spatial OS")
         self.clock = pygame.time.Clock()
 
-        # ✅ Attach the global state singleton here
+        # IMPORTANT: shared state for all realms
         self.global_state = global_state
 
         # Launcher UI state
         self.running = False
         self.selected_realm = 0
-        self.realm_keys = list(REALMS.keys())
+        self.realm_keys = list(REALMS_CONFIG.keys())
 
         # Fonts
         pygame.font.init()
@@ -96,23 +41,41 @@ class SpatialOSLauncher:
         self.font_realm = pygame.font.SysFont("DejaVu Sans", 32, bold=True)
         self.font_small = pygame.font.SysFont("DejaVu Sans", 20)
 
-    def launch_realm(self, key: str):
-        """Launch a specific realm by key"""
-        realm_info = REALMS.get(key)
-        if not realm_info:
-            print(f"ERROR: Unknown realm key: {key}")
+        # Try to load emoji font
+        self.emoji_font = get_emoji_font()
+
+        logging.info("MotiBeam Spatial OS Launcher starting...")
+        logging.info(f"Mode: {self.global_state.mode}, Theme: {self.global_state.theme}")
+
+    def launch_realm(self, realm_key: str):
+        """Launch a specific realm by key using dynamic import"""
+        cfg = REALMS_CONFIG.get(realm_key)
+        if not cfg:
+            logging.error(f"Unknown realm: {realm_key}")
             return
 
-        print(f"INFO: Launching realm: {key}")
+        logging.info(f"Launching realm: {realm_key}")
 
-        factory = realm_info["factory"]
-        # Pass global_state to the realm factory
-        realm = factory(self.screen, self.clock, self.global_state)
+        try:
+            # Dynamically import the realm module and class
+            module = importlib.import_module(cfg["module"])
+            realm_class = getattr(module, cfg["class_name"])
 
-        # All realms expose .run()
-        realm.run()
+            # Instantiate the realm with shared global state
+            realm = realm_class(
+                screen=self.screen,
+                clock=self.clock,
+                global_state=self.global_state,
+                standalone=False,
+            )
 
-        print(f"INFO: Realm {key} exited")
+            # Run the realm
+            realm.run()
+
+            logging.info(f"Realm {realm_key} exited cleanly")
+
+        except Exception as e:
+            logging.exception(f"Failed to load realm {realm_key}: {e}")
 
     def draw_launcher_ui(self):
         """Draw the launcher selection grid"""
@@ -124,9 +87,14 @@ class SpatialOSLauncher:
         title_rect = title.get_rect(center=(640, 80))
         self.screen.blit(title, title_rect)
 
-        # Subtitle
+        # Subtitle with mode and theme
         mode = getattr(self.global_state, "mode", "NORMAL")
-        subtitle = self.font_subtitle.render(f"Mode: {mode} • Select a Realm", True, (140, 180, 220))
+        theme = getattr(self.global_state, "theme", "NEON")
+        subtitle = self.font_subtitle.render(
+            f"Mode: {mode} • Theme: {theme} • Select a Realm",
+            True,
+            (140, 180, 220)
+        )
         subtitle_rect = subtitle.get_rect(center=(640, 130))
         self.screen.blit(subtitle, subtitle_rect)
 
@@ -141,7 +109,7 @@ class SpatialOSLauncher:
         start_y = 200
 
         for idx, key in enumerate(self.realm_keys):
-            realm_info = REALMS[key]
+            realm_info = REALMS_CONFIG[key]
 
             row = idx // grid_cols
             col = idx % grid_cols
@@ -176,7 +144,7 @@ class SpatialOSLauncher:
             self.screen.blit(label, label_rect)
 
         # Instructions
-        instructions = "↑↓←→ Navigate  •  ENTER Launch  •  ESC Exit  •  M Toggle Mode"
+        instructions = "↑↓←→ Navigate  •  ENTER Launch  •  M Mode  •  T Theme  •  ESC Exit"
         instr_surf = self.font_small.render(instructions, True, (120, 160, 200))
         instr_rect = instr_surf.get_rect(center=(640, 680))
         self.screen.blit(instr_surf, instr_rect)
@@ -184,19 +152,19 @@ class SpatialOSLauncher:
     def handle_input(self, event):
         """Handle launcher input events"""
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_ESCAPE:
+            if event.key == pygame.K_ESCAPE or event.key == pygame.K_q:
                 self.running = False
-            elif event.key == pygame.K_RETURN:
+            elif event.key == pygame.K_RETURN or event.key == pygame.K_SPACE:
                 # Launch selected realm
                 key = self.realm_keys[self.selected_realm]
                 self.launch_realm(key)
-            elif event.key == pygame.K_UP:
+            elif event.key == pygame.K_UP or event.key == pygame.K_w:
                 self.selected_realm = (self.selected_realm - 2) % len(self.realm_keys)
-            elif event.key == pygame.K_DOWN:
+            elif event.key == pygame.K_DOWN or event.key == pygame.K_s:
                 self.selected_realm = (self.selected_realm + 2) % len(self.realm_keys)
-            elif event.key == pygame.K_LEFT:
+            elif event.key == pygame.K_LEFT or event.key == pygame.K_a:
                 self.selected_realm = (self.selected_realm - 1) % len(self.realm_keys)
-            elif event.key == pygame.K_RIGHT:
+            elif event.key == pygame.K_RIGHT or event.key == pygame.K_d:
                 self.selected_realm = (self.selected_realm + 1) % len(self.realm_keys)
             elif event.key == pygame.K_m:
                 # Toggle mode (NORMAL -> STUDY -> SLEEP -> NORMAL)
@@ -207,7 +175,17 @@ class SpatialOSLauncher:
                     self.global_state.mode = "SLEEP"
                 else:
                     self.global_state.mode = "NORMAL"
-                print(f"INFO: Mode changed to {self.global_state.mode}")
+                logging.info(f"Mode changed to {self.global_state.mode}")
+            elif event.key == pygame.K_t:
+                # Toggle theme (NEON -> MINIMAL -> NIGHT -> NEON)
+                current_theme = getattr(self.global_state, "theme", "NEON")
+                if current_theme == "NEON":
+                    self.global_state.theme = "MINIMAL"
+                elif current_theme == "MINIMAL":
+                    self.global_state.theme = "NIGHT"
+                else:
+                    self.global_state.theme = "NEON"
+                logging.info(f"Theme changed to {self.global_state.theme}")
 
     def run(self):
         """Main launcher loop"""
@@ -225,6 +203,7 @@ class SpatialOSLauncher:
             self.draw_launcher_ui()
             pygame.display.flip()
 
+        logging.info("Launcher exiting...")
         pygame.quit()
         sys.exit(0)
 
