@@ -300,7 +300,7 @@ def draw_content_box(screen, fonts, title, items, y_start, accent_color, glow=Tr
 
 def draw_two_column_layout(screen, fonts, left_section, right_section, y_start, accent_color):
     """
-    Draw full-width two-column layout for maximum screen usage
+    Draw full-width two-column layout with futuristic glowing status indicators
 
     Args:
         left_section: {'title': str, 'items': [str]}
@@ -313,15 +313,47 @@ def draw_two_column_layout(screen, fonts, left_section, right_section, y_start, 
     col_spacing = 60  # Space between columns
     col_width = (w - 2 * margin - col_spacing) // 2
 
+    # Animation pulse for alive feel
+    t = pygame.time.get_ticks() / 1000.0
+    pulse = 0.7 + 0.3 * math.sin(t * 2.0)  # Subtle breathing pulse
+
     # Left column
     left_x = margin
     title_surf = fonts['header'].render(left_section['title'], True, accent_color)
     screen.blit(title_surf, (left_x, y_start))
 
+    # Animated underline glow beneath title
+    glow_width = int(title_surf.get_width() * (0.4 + 0.1 * pulse))
+    glow_surf = pygame.Surface((glow_width, 3), pygame.SRCALPHA)
+    glow_surf.fill((*accent_color, int(120 * pulse)))
+    screen.blit(glow_surf, (left_x, y_start + title_surf.get_height() + 8))
+
     y = y_start + 85
-    for item in left_section['items']:
-        item_surf = fonts['body'].render(item, True, COLOR_TEXT_PRIMARY)
-        screen.blit(item_surf, (left_x + 20, y))
+    for i, item in enumerate(left_section['items']):
+        if item.strip():  # Only draw indicator for non-empty items
+            # Glowing orb indicator (pulsing, alive)
+            orb_pulse = 0.6 + 0.4 * math.sin(t * 3.0 + i * 0.5)
+            orb_radius = 6
+            orb_x = left_x + 10
+            orb_y = y + 20
+
+            # Outer glow
+            glow_surf = pygame.Surface((orb_radius * 4, orb_radius * 4), pygame.SRCALPHA)
+            pygame.draw.circle(glow_surf, (*accent_color, int(40 * orb_pulse)),
+                             (orb_radius * 2, orb_radius * 2), orb_radius * 2)
+            screen.blit(glow_surf, (orb_x - orb_radius * 2, orb_y - orb_radius * 2))
+
+            # Core orb
+            pygame.draw.circle(screen, accent_color, (orb_x, orb_y), orb_radius)
+            pygame.draw.circle(screen, (255, 255, 255, int(180 * orb_pulse)),
+                             (orb_x, orb_y), orb_radius - 2)
+
+            item_surf = fonts['body'].render(item, True, COLOR_TEXT_PRIMARY)
+            screen.blit(item_surf, (left_x + 35, y))
+        else:
+            # Empty line - no indicator
+            item_surf = fonts['body'].render(item, True, COLOR_TEXT_PRIMARY)
+            screen.blit(item_surf, (left_x + 35, y))
         y += 60  # Increased line spacing for wall readability
 
     # Right column
@@ -329,11 +361,40 @@ def draw_two_column_layout(screen, fonts, left_section, right_section, y_start, 
     title_surf = fonts['header'].render(right_section['title'], True, accent_color)
     screen.blit(title_surf, (right_x, y_start))
 
+    # Animated underline glow beneath title
+    glow_width = int(title_surf.get_width() * (0.4 + 0.1 * pulse))
+    glow_surf = pygame.Surface((glow_width, 3), pygame.SRCALPHA)
+    glow_surf.fill((*accent_color, int(120 * pulse)))
+    screen.blit(glow_surf, (right_x, y_start + title_surf.get_height() + 8))
+
     y = y_start + 85
-    for item in right_section['items']:
-        item_surf = fonts['body'].render(item, True, COLOR_TEXT_PRIMARY)
-        screen.blit(item_surf, (right_x + 20, y))
+    for i, item in enumerate(right_section['items']):
+        if item.strip():  # Only draw indicator for non-empty items
+            # Glowing orb indicator (pulsing, alive)
+            orb_pulse = 0.6 + 0.4 * math.sin(t * 3.0 + i * 0.5)
+            orb_radius = 6
+            orb_x = right_x + 10
+            orb_y = y + 20
+
+            # Outer glow
+            glow_surf = pygame.Surface((orb_radius * 4, orb_radius * 4), pygame.SRCALPHA)
+            pygame.draw.circle(glow_surf, (*accent_color, int(40 * orb_pulse)),
+                             (orb_radius * 2, orb_radius * 2), orb_radius * 2)
+            screen.blit(glow_surf, (orb_x - orb_radius * 2, orb_y - orb_radius * 2))
+
+            # Core orb
+            pygame.draw.circle(screen, accent_color, (orb_x, orb_y), orb_radius)
+            pygame.draw.circle(screen, (255, 255, 255, int(180 * orb_pulse)),
+                             (orb_x, orb_y), orb_radius - 2)
+
+            item_surf = fonts['body'].render(item, True, COLOR_TEXT_PRIMARY)
+            screen.blit(item_surf, (right_x + 35, y))
+        else:
+            # Empty line - no indicator
+            item_surf = fonts['body'].render(item, True, COLOR_TEXT_PRIMARY)
+            screen.blit(item_surf, (right_x + 35, y))
         y += 60
+
 
 def draw_full_width_content(screen, fonts, title, items, y_start, accent_color):
     """
