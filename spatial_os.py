@@ -155,10 +155,10 @@ COLOR_SUCCESS = (80, 220, 160)    # For positive indicators
 # ============================================================================
 # LAYOUT CONSTANTS (UPDATED FOR FULL WIDTH)
 # ============================================================================
-HEADER_HEIGHT = 120      # Ultra-compact header for max grid space
-FOOTER_HEIGHT = 50       # Ultra-compact footer
-GRID_MARGIN = 10         # Absolute minimal side margins
-GRID_PADDING = 4         # Absolute minimal spacing between cards
+HEADER_HEIGHT = 110      # Aggressive compact header
+FOOTER_HEIGHT = 60       # Standard footer
+GRID_MARGIN = 15         # Balanced side margins
+GRID_PADDING = 8         # Comfortable spacing between cards
 CARD_RADIUS = 16         # Card corner radius
 
 # ============================================================================
@@ -396,20 +396,20 @@ class SpatialOSLauncher:
         self.screen.blit(mode_surf, (40, HEADER_HEIGHT - 30))
 
     def draw_realms_grid(self):
-        """Draw the 3x3 grid of realm cards - ULTRA-WIDE VERSION."""
-        # Use 96% of screen width (1229px out of 1280px)
-        screen_usage = 0.96
+        """Draw the 3x3 grid of realm cards - AGGRESSIVE FULL-WIDTH VERSION."""
+        # Use 95% of screen width (1216px out of 1280px)
+        screen_usage = 0.95
         total_grid_width = int(SCREEN_WIDTH * screen_usage)
 
         # Calculate vertical space
-        grid_top = HEADER_HEIGHT + 10
-        grid_bottom = SCREEN_HEIGHT - FOOTER_HEIGHT - 10
+        grid_top = HEADER_HEIGHT + 12
+        grid_bottom = SCREEN_HEIGHT - FOOTER_HEIGHT - 12
         total_grid_height = grid_bottom - grid_top
 
-        # Card dimensions - maximize width with minimal 4px spacing
-        # For 3 cards with 2 gaps of 4px: total = card*3 + 4*2
-        card_width = (total_grid_width - 8) // 3
-        card_height = (total_grid_height - 8) // 3
+        # Card dimensions with 8px spacing between cards
+        # For 3 cards with 2 gaps of 8px: total = card*3 + 8*2
+        card_width = (total_grid_width - 16) // 3
+        card_height = (total_grid_height - 16) // 3
 
         # Center the grid horizontally
         start_x = (SCREEN_WIDTH - total_grid_width) // 2
@@ -417,18 +417,28 @@ class SpatialOSLauncher:
 
         # Debug output (terminal only - shown once)
         if not hasattr(self, '_layout_debug_shown'):
-            print(f"[LAYOUT] Ultra-wide grid: {total_grid_width}x{total_grid_height}px")
-            print(f"[LAYOUT] Cards: {card_width}x{card_height}px each")
-            print(f"[LAYOUT] Using {screen_usage * 100:.1f}% of screen width")
-            print(f"[LAYOUT] Total card area: {card_width * 3 + 8}px ({((card_width * 3 + 8) / SCREEN_WIDTH * 100):.1f}%)")
+            print("=" * 60)
+            print("[LAYOUT DEBUG] MotiBeam Spatial OS Layout Analysis")
+            print("=" * 60)
+            print(f"Screen Resolution: {SCREEN_WIDTH}x{SCREEN_HEIGHT} (1280x720 HD)")
+            print(f"Grid Usage: {screen_usage * 100:.1f}% of screen width")
+            print(f"Grid Dimensions: {total_grid_width}x{total_grid_height}px")
+            print(f"Card Dimensions: {card_width}x{card_height}px each")
+            print(f"Card Spacing: 8px between cards")
+            print(f"Total Card Width: {card_width * 3 + 16}px")
+            print(f"Actual Usage: {((card_width * 3 + 16) / SCREEN_WIDTH * 100):.2f}% of screen")
+            print(f"Side Margins: {start_x}px on each side")
+            print(f"Expected Card Width: ~397px")
+            print(f"Actual Card Width: {card_width}px")
+            print("=" * 60)
             self._layout_debug_shown = True
 
         for i, realm in enumerate(REALMS_CONFIG):
             row = i // 3
             col = i % 3
 
-            x = start_x + col * (card_width + 4)
-            y = start_y + row * (card_height + 4)
+            x = start_x + col * (card_width + 8)
+            y = start_y + row * (card_height + 8)
 
             # Draw card background
             card_rect = pygame.Rect(x, y, card_width, card_height)
@@ -523,34 +533,46 @@ class SpatialOSLauncher:
         self.screen.blit(instruct_text, instruct_rect)
 
     def draw_layout_debug(self):
-        """Draw debug overlay to visualize layout. Enable in run() for debugging."""
-        debug_font = pygame.font.SysFont('Arial', 18)
+        """Draw debug overlay to visualize layout. Shows exact dimensions and usage."""
+        debug_font = pygame.font.SysFont('Arial', 16, bold=True)
 
-        # Draw screen border
-        pygame.draw.rect(self.screen, (255, 0, 0), (0, 0, SCREEN_WIDTH, SCREEN_HEIGHT), 1)
+        # Draw screen border (red)
+        pygame.draw.rect(self.screen, (255, 0, 0), (0, 0, SCREEN_WIDTH, SCREEN_HEIGHT), 2)
 
-        # Draw header/footer boundaries
+        # Draw header/footer boundaries (green)
         pygame.draw.line(self.screen, (0, 255, 0), (0, HEADER_HEIGHT),
-                        (SCREEN_WIDTH, HEADER_HEIGHT), 1)
+                        (SCREEN_WIDTH, HEADER_HEIGHT), 2)
         pygame.draw.line(self.screen, (0, 255, 0), (0, SCREEN_HEIGHT - FOOTER_HEIGHT),
-                        (SCREEN_WIDTH, SCREEN_HEIGHT - FOOTER_HEIGHT), 1)
+                        (SCREEN_WIDTH, SCREEN_HEIGHT - FOOTER_HEIGHT), 2)
 
-        # Draw grid boundaries (96% width)
-        grid_width = int(SCREEN_WIDTH * 0.96)
+        # Draw grid boundaries (95% width - yellow)
+        grid_width = int(SCREEN_WIDTH * 0.95)
         grid_x = (SCREEN_WIDTH - grid_width) // 2
+        grid_height = SCREEN_HEIGHT - HEADER_HEIGHT - FOOTER_HEIGHT - 24
         pygame.draw.rect(self.screen, (255, 255, 0),
-                        (grid_x, HEADER_HEIGHT + 10, grid_width, SCREEN_HEIGHT - HEADER_HEIGHT - FOOTER_HEIGHT - 20), 1)
+                        (grid_x, HEADER_HEIGHT + 12, grid_width, grid_height), 2)
 
-        # Show dimensions
-        card_width = (grid_width - 8) // 3
+        # Calculate card dimensions
+        card_width = (grid_width - 16) // 3
+        total_card_width = card_width * 3 + 16
+        usage_percent = (total_card_width / SCREEN_WIDTH * 100)
+
+        # Show dimensions on screen with background
         info = [
-            f"Screen: {SCREEN_WIDTH}x{SCREEN_HEIGHT}",
-            f"Header: {HEADER_HEIGHT}px, Footer: {FOOTER_HEIGHT}px",
-            f"Grid: {grid_width}px wide (96%)",
-            f"Cards: {card_width}px each (spacing: 4px)",
-            f"Total cards: {card_width * 3 + 8}px ({((card_width * 3 + 8) / SCREEN_WIDTH * 100):.1f}%)"
+            f"RESOLUTION: {SCREEN_WIDTH}x{SCREEN_HEIGHT} HD",
+            f"GRID: {grid_width}px (95% target)",
+            f"CARDS: {card_width}px each",
+            f"TOTAL: {total_card_width}px ({usage_percent:.1f}%)",
+            f"MARGINS: {grid_x}px each side"
         ]
 
+        # Draw semi-transparent background for text
+        bg_height = len(info) * 22 + 10
+        bg_surf = pygame.Surface((350, bg_height), pygame.SRCALPHA)
+        bg_surf.fill((0, 0, 0, 180))
+        self.screen.blit(bg_surf, (5, 5))
+
+        # Draw info text
         for i, text in enumerate(info):
             surf = debug_font.render(text, True, (255, 255, 0))
             self.screen.blit(surf, (10, 10 + i * 22))
@@ -666,8 +688,9 @@ class SpatialOSLauncher:
             self.draw_realms_grid()
             self.draw_footer()
 
-            # Uncomment the line below to enable layout debugging overlay:
-            # self.draw_layout_debug()
+            # Visual debug overlay - ENABLED for layout verification
+            # Comment out this line once layout is confirmed
+            self.draw_layout_debug()
 
             if self.quit_requested:
                 self.draw_quit_prompt()
