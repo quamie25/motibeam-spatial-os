@@ -155,10 +155,10 @@ COLOR_SUCCESS = (80, 220, 160)    # For positive indicators
 # ============================================================================
 # LAYOUT CONSTANTS (UPDATED FOR FULL WIDTH)
 # ============================================================================
-HEADER_HEIGHT = 140      # Reduced from 160 for more grid space
-FOOTER_HEIGHT = 70       # Reduced from 80
-GRID_MARGIN = 40         # Side margins (40px on each side)
-GRID_PADDING = 15        # Space between cards
+HEADER_HEIGHT = 130      # More compact header
+FOOTER_HEIGHT = 60       # More compact footer
+GRID_MARGIN = 20         # Minimal side margins for max width
+GRID_PADDING = 12        # Minimal spacing between cards
 CARD_RADIUS = 16         # Card corner radius
 
 # ============================================================================
@@ -397,51 +397,61 @@ class SpatialOSLauncher:
 
     def draw_realms_grid(self):
         """Draw the 3x3 grid of realm cards - FULL WIDTH VERSION."""
-        # Calculate available space
-        available_width = SCREEN_WIDTH - (2 * GRID_MARGIN)
-        available_height = SCREEN_HEIGHT - HEADER_HEIGHT - FOOTER_HEIGHT - GRID_MARGIN
+        # Use 94% of screen width (1203px out of 1280px)
+        screen_usage = 0.94
+        total_grid_width = int(SCREEN_WIDTH * screen_usage)
 
-        # Calculate card dimensions
-        # For 3 cards with 2 gaps: card_width * 3 + GRID_PADDING * 2 = available_width
-        card_width = (available_width - 2 * GRID_PADDING) // 3
-        card_height = (available_height - 2 * GRID_PADDING) // 3
+        # Calculate vertical space
+        grid_top = HEADER_HEIGHT + 15
+        grid_bottom = SCREEN_HEIGHT - FOOTER_HEIGHT - 15
+        total_grid_height = grid_bottom - grid_top
 
-        start_x = GRID_MARGIN
-        start_y = HEADER_HEIGHT + GRID_MARGIN
+        # Card dimensions - maximize width
+        card_width = total_grid_width // 3 - 10  # Minimal spacing
+        card_height = total_grid_height // 3 - 10
+
+        # Center the grid horizontally
+        start_x = (SCREEN_WIDTH - total_grid_width) // 2
+        start_y = grid_top
+
+        # Debug output (terminal only - shown once)
+        if not hasattr(self, '_layout_debug_shown'):
+            print(f"[LAYOUT] Grid: {total_grid_width}x{total_grid_height}px")
+            print(f"[LAYOUT] Cards: {card_width}x{card_height}px each")
+            print(f"[LAYOUT] Using {(card_width * 3 + 20) / SCREEN_WIDTH * 100:.1f}% of screen width")
+            self._layout_debug_shown = True
 
         for i, realm in enumerate(REALMS_CONFIG):
             row = i // 3
             col = i % 3
 
-            x = start_x + col * (card_width + GRID_PADDING)
-            y = start_y + row * (card_height + GRID_PADDING)
+            x = start_x + col * (card_width + 10)
+            y = start_y + row * (card_height + 10)
 
-            # Card background
+            # Draw card background
             card_rect = pygame.Rect(x, y, card_width, card_height)
             is_selected = (i == self.selected_idx)
 
-            # Draw shadow for selected cards
+            # Card colors
             if is_selected:
-                shadow_rect = card_rect.move(4, 4)
+                # Bright selected card with shadow
+                card_color = realm["color"]
+                border_color = COLOR_TEXT_PRIMARY
+                # Add subtle shadow
+                shadow_rect = card_rect.move(3, 3)
                 shadow_surf = pygame.Surface((card_width, card_height), pygame.SRCALPHA)
                 pygame.draw.rect(shadow_surf, (0, 0, 0, 80), shadow_surf.get_rect(), border_radius=CARD_RADIUS)
                 self.screen.blit(shadow_surf, shadow_rect.topleft)
-
-            # Card color - brighter realm color for selected, dark for normal
-            if is_selected:
-                # Brighten the realm color
-                card_color = tuple(min(255, int(c * 1.3)) for c in realm["color"])
-                border_color = COLOR_TEXT_PRIMARY
-                border_width = 3
             else:
-                card_color = COLOR_CARD_NORMAL
+                # Normal card
+                card_color = tuple(c + 10 for c in COLOR_CARD_BG[:3])
                 border_color = COLOR_TEXT_TERTIARY
-                border_width = 1
 
+            # Draw card
             pygame.draw.rect(self.screen, card_color, card_rect, border_radius=CARD_RADIUS)
-            pygame.draw.rect(self.screen, border_color, card_rect, border_width, border_radius=CARD_RADIUS)
+            pygame.draw.rect(self.screen, border_color, card_rect, 2, border_radius=CARD_RADIUS)
 
-            # Draw emoji (higher in card)
+            # Draw emoji
             emoji_surf = self.font_emoji.render(realm["emoji"], True, COLOR_TEXT_PRIMARY)
             emoji_x = x + (card_width - emoji_surf.get_width()) // 2
             emoji_y = y + 25
@@ -450,20 +460,22 @@ class SpatialOSLauncher:
             # Draw realm title
             title_surf = self.font_realm_title.render(realm["label"], True, COLOR_TEXT_PRIMARY)
             title_x = x + (card_width - title_surf.get_width()) // 2
-            title_y = y + card_height - 55
+            title_y = y + card_height - 60
             self.screen.blit(title_surf, (title_x, title_y))
 
-            # Draw subtitle (hidden in privacy mode, closer to bottom)
+            # Draw subtitle (hidden in privacy mode)
             if not self.privacy_mode:
                 sub_surf = self.font_realm_sub.render(realm["sub"], True, COLOR_TEXT_SECONDARY)
                 sub_x = x + (card_width - sub_surf.get_width()) // 2
-                sub_y = y + card_height - 25
+                sub_y = y + card_height - 30
                 self.screen.blit(sub_surf, (sub_x, sub_y))
 
-            # Extra glow for selected card
+            # Selection glow effect
             if is_selected:
-                glow_rect = card_rect.inflate(6, 6)
-                pygame.draw.rect(self.screen, realm["color"], glow_rect, 2, border_radius=CARD_RADIUS+3)
+                for glow in [2, 4]:
+                    glow_rect = card_rect.inflate(glow*2, glow*2)
+                    glow_color = (*realm["color"], 40)
+                    pygame.draw.rect(self.screen, glow_color, glow_rect, 1, border_radius=CARD_RADIUS+glow)
 
     def draw_footer(self):
         """Draw bottom footer with ticker."""
@@ -507,6 +519,38 @@ class SpatialOSLauncher:
         instruct_text = instruct_font.render("Press Q to confirm, ESC to cancel", True, COLOR_TEXT_SECONDARY)
         instruct_rect = instruct_text.get_rect(center=(SCREEN_WIDTH//2, SCREEN_HEIGHT//2 + 20))
         self.screen.blit(instruct_text, instruct_rect)
+
+    def draw_layout_debug(self):
+        """Draw debug overlay to visualize layout. Enable in run() for debugging."""
+        debug_font = pygame.font.SysFont('Arial', 18)
+
+        # Draw screen border
+        pygame.draw.rect(self.screen, (255, 0, 0), (0, 0, SCREEN_WIDTH, SCREEN_HEIGHT), 1)
+
+        # Draw header/footer boundaries
+        pygame.draw.line(self.screen, (0, 255, 0), (0, HEADER_HEIGHT),
+                        (SCREEN_WIDTH, HEADER_HEIGHT), 1)
+        pygame.draw.line(self.screen, (0, 255, 0), (0, SCREEN_HEIGHT - FOOTER_HEIGHT),
+                        (SCREEN_WIDTH, SCREEN_HEIGHT - FOOTER_HEIGHT), 1)
+
+        # Draw grid boundaries (94% width)
+        grid_width = int(SCREEN_WIDTH * 0.94)
+        grid_x = (SCREEN_WIDTH - grid_width) // 2
+        pygame.draw.rect(self.screen, (255, 255, 0),
+                        (grid_x, HEADER_HEIGHT + 15, grid_width, SCREEN_HEIGHT - HEADER_HEIGHT - FOOTER_HEIGHT - 30), 1)
+
+        # Show dimensions
+        info = [
+            f"Screen: {SCREEN_WIDTH}x{SCREEN_HEIGHT}",
+            f"Header: {HEADER_HEIGHT}px, Footer: {FOOTER_HEIGHT}px",
+            f"Grid: {int(SCREEN_WIDTH * 0.94)}px wide (94%)",
+            f"Cards: ~{int((SCREEN_WIDTH * 0.94) // 3 - 10)}px each",
+            f"Margins: {GRID_MARGIN}px, Padding: {GRID_PADDING}px"
+        ]
+
+        for i, text in enumerate(info):
+            surf = debug_font.render(text, True, (255, 255, 0))
+            self.screen.blit(surf, (10, 10 + i * 22))
 
     # ------------------------------------------------------------------------
     # INPUT & LOGIC
@@ -618,6 +662,9 @@ class SpatialOSLauncher:
             self.draw_header()
             self.draw_realms_grid()
             self.draw_footer()
+
+            # Uncomment the line below to enable layout debugging overlay:
+            # self.draw_layout_debug()
 
             if self.quit_requested:
                 self.draw_quit_prompt()
