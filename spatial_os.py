@@ -155,10 +155,10 @@ COLOR_SUCCESS = (80, 220, 160)    # For positive indicators
 # ============================================================================
 # LAYOUT CONSTANTS (UPDATED FOR FULL WIDTH)
 # ============================================================================
-HEADER_HEIGHT = 130      # More compact header
-FOOTER_HEIGHT = 60       # More compact footer
-GRID_MARGIN = 20         # Minimal side margins for max width
-GRID_PADDING = 12        # Minimal spacing between cards
+HEADER_HEIGHT = 120      # Ultra-compact header for max grid space
+FOOTER_HEIGHT = 50       # Ultra-compact footer
+GRID_MARGIN = 10         # Absolute minimal side margins
+GRID_PADDING = 4         # Absolute minimal spacing between cards
 CARD_RADIUS = 16         # Card corner radius
 
 # ============================================================================
@@ -355,18 +355,18 @@ class SpatialOSLauncher:
             )
 
     def draw_header(self):
-        """Draw compact top header with title, time, and weather."""
+        """Draw full-width header with proper spacing across entire screen."""
         header_rect = pygame.Rect(0, 0, SCREEN_WIDTH, HEADER_HEIGHT)
         pygame.draw.rect(self.screen, COLOR_CARD_BG, header_rect)
 
-        # Title (left aligned, moved higher)
+        # Title (left aligned with 40px margin)
         title = self.font_title.render("MOTIBEAM SPATIAL OS", True, COLOR_TEXT_PRIMARY)
-        self.screen.blit(title, (30, 30))
+        self.screen.blit(title, (40, 25))
 
-        # Current time (center, moved higher)
+        # Current time (properly centered)
         now = datetime.now()
         time_str = now.strftime("%I:%M %p").lstrip("0")
-        date_str = now.strftime("%b %d").upper()  # Shorter format: "DEC 03"
+        date_str = now.strftime("%b %d").upper()
 
         time_surf = self.font_clock.render(time_str, True, COLOR_TEXT_PRIMARY)
         date_surf = self.font_weather.render(date_str, True, COLOR_TEXT_SECONDARY)
@@ -374,10 +374,10 @@ class SpatialOSLauncher:
         time_x = SCREEN_WIDTH // 2 - time_surf.get_width() // 2
         date_x = SCREEN_WIDTH // 2 - date_surf.get_width() // 2
 
-        self.screen.blit(time_surf, (time_x, 30))
-        self.screen.blit(date_surf, (date_x, 85))
+        self.screen.blit(time_surf, (time_x, 25))
+        self.screen.blit(date_surf, (date_x, 75))
 
-        # Weather (right aligned, two lines)
+        # Weather (right aligned with 40px margin)
         weather = self.weather_service.get_weather()
         weather_line1 = f"{weather['location']} · {weather['temp_f']}°F"
         weather_line2 = f"{weather['condition']}"
@@ -385,30 +385,31 @@ class SpatialOSLauncher:
         weather_surf1 = self.font_weather.render(weather_line1, True, COLOR_TEXT_SECONDARY)
         weather_surf2 = self.font_weather.render(weather_line2, True, COLOR_TEXT_TERTIARY)
 
-        self.screen.blit(weather_surf1, (SCREEN_WIDTH - weather_surf1.get_width() - 30, 30))
-        self.screen.blit(weather_surf2, (SCREEN_WIDTH - weather_surf2.get_width() - 30, 62))
+        self.screen.blit(weather_surf1, (SCREEN_WIDTH - weather_surf1.get_width() - 40, 25))
+        self.screen.blit(weather_surf2, (SCREEN_WIDTH - weather_surf2.get_width() - 40, 55))
 
-        # Mode indicator (bottom of header, left aligned)
+        # Mode indicator (bottom-left of header)
         mode_text = f"MODE: {self.mode}"
         if self.privacy_mode:
             mode_text += " · PRIVACY ON"
         mode_surf = self.font_mode.render(mode_text, True, COLOR_ACCENT)
-        self.screen.blit(mode_surf, (30, HEADER_HEIGHT - 35))
+        self.screen.blit(mode_surf, (40, HEADER_HEIGHT - 30))
 
     def draw_realms_grid(self):
-        """Draw the 3x3 grid of realm cards - FULL WIDTH VERSION."""
-        # Use 94% of screen width (1203px out of 1280px)
-        screen_usage = 0.94
+        """Draw the 3x3 grid of realm cards - ULTRA-WIDE VERSION."""
+        # Use 96% of screen width (1229px out of 1280px)
+        screen_usage = 0.96
         total_grid_width = int(SCREEN_WIDTH * screen_usage)
 
         # Calculate vertical space
-        grid_top = HEADER_HEIGHT + 15
-        grid_bottom = SCREEN_HEIGHT - FOOTER_HEIGHT - 15
+        grid_top = HEADER_HEIGHT + 10
+        grid_bottom = SCREEN_HEIGHT - FOOTER_HEIGHT - 10
         total_grid_height = grid_bottom - grid_top
 
-        # Card dimensions - maximize width
-        card_width = total_grid_width // 3 - 10  # Minimal spacing
-        card_height = total_grid_height // 3 - 10
+        # Card dimensions - maximize width with minimal 4px spacing
+        # For 3 cards with 2 gaps of 4px: total = card*3 + 4*2
+        card_width = (total_grid_width - 8) // 3
+        card_height = (total_grid_height - 8) // 3
 
         # Center the grid horizontally
         start_x = (SCREEN_WIDTH - total_grid_width) // 2
@@ -416,17 +417,18 @@ class SpatialOSLauncher:
 
         # Debug output (terminal only - shown once)
         if not hasattr(self, '_layout_debug_shown'):
-            print(f"[LAYOUT] Grid: {total_grid_width}x{total_grid_height}px")
+            print(f"[LAYOUT] Ultra-wide grid: {total_grid_width}x{total_grid_height}px")
             print(f"[LAYOUT] Cards: {card_width}x{card_height}px each")
-            print(f"[LAYOUT] Using {(card_width * 3 + 20) / SCREEN_WIDTH * 100:.1f}% of screen width")
+            print(f"[LAYOUT] Using {screen_usage * 100:.1f}% of screen width")
+            print(f"[LAYOUT] Total card area: {card_width * 3 + 8}px ({((card_width * 3 + 8) / SCREEN_WIDTH * 100):.1f}%)")
             self._layout_debug_shown = True
 
         for i, realm in enumerate(REALMS_CONFIG):
             row = i // 3
             col = i % 3
 
-            x = start_x + col * (card_width + 10)
-            y = start_y + row * (card_height + 10)
+            x = start_x + col * (card_width + 4)
+            y = start_y + row * (card_height + 4)
 
             # Draw card background
             card_rect = pygame.Rect(x, y, card_width, card_height)
@@ -533,19 +535,20 @@ class SpatialOSLauncher:
         pygame.draw.line(self.screen, (0, 255, 0), (0, SCREEN_HEIGHT - FOOTER_HEIGHT),
                         (SCREEN_WIDTH, SCREEN_HEIGHT - FOOTER_HEIGHT), 1)
 
-        # Draw grid boundaries (94% width)
-        grid_width = int(SCREEN_WIDTH * 0.94)
+        # Draw grid boundaries (96% width)
+        grid_width = int(SCREEN_WIDTH * 0.96)
         grid_x = (SCREEN_WIDTH - grid_width) // 2
         pygame.draw.rect(self.screen, (255, 255, 0),
-                        (grid_x, HEADER_HEIGHT + 15, grid_width, SCREEN_HEIGHT - HEADER_HEIGHT - FOOTER_HEIGHT - 30), 1)
+                        (grid_x, HEADER_HEIGHT + 10, grid_width, SCREEN_HEIGHT - HEADER_HEIGHT - FOOTER_HEIGHT - 20), 1)
 
         # Show dimensions
+        card_width = (grid_width - 8) // 3
         info = [
             f"Screen: {SCREEN_WIDTH}x{SCREEN_HEIGHT}",
             f"Header: {HEADER_HEIGHT}px, Footer: {FOOTER_HEIGHT}px",
-            f"Grid: {int(SCREEN_WIDTH * 0.94)}px wide (94%)",
-            f"Cards: ~{int((SCREEN_WIDTH * 0.94) // 3 - 10)}px each",
-            f"Margins: {GRID_MARGIN}px, Padding: {GRID_PADDING}px"
+            f"Grid: {grid_width}px wide (96%)",
+            f"Cards: {card_width}px each (spacing: 4px)",
+            f"Total cards: {card_width * 3 + 8}px ({((card_width * 3 + 8) / SCREEN_WIDTH * 100):.1f}%)"
         ]
 
         for i, text in enumerate(info):
