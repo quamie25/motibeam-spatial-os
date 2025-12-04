@@ -87,26 +87,17 @@ class RealmOrb:
         pygame.draw.circle(s, inner_glow, (inner_radius, inner_radius), inner_radius)
         surface.blit(s, (self.position[0] - inner_radius, self.position[1] - inner_radius))
 
-        # Draw realm ID as large text instead of emoji (emojis show as ?)
-        # Use realm number prominently
-        id_text = font_emoji.render(str(self.realm_id), True, (255, 255, 255))
-        id_rect = id_text.get_rect(center=self.position)
-        surface.blit(id_text, id_rect)
+        # Draw realm symbol as large text (not emoji, actual symbol characters)
+        symbol_surf = font_emoji.render(self.emoji, True, (255, 255, 255))
+        symbol_rect = symbol_surf.get_rect(center=self.position)
+        surface.blit(symbol_surf, symbol_rect)
 
-        # Realm number INSIDE orb (top) - PROMINENT
-        num_y_inside = self.position[1] - int(radius * 0.4)
-        ui.draw_text_with_shadow(
-            surface, str(self.realm_id), font_label,
-            (self.position[0], num_y_inside),
-            (255, 255, 255), 3, True
-        )
-
-        # Realm name below orb
-        label_y = self.position[1] + int(radius) + 40
+        # Realm name below orb - larger and more visible
+        label_y = self.position[1] + int(radius) + 50
         ui.draw_text_with_shadow(
             surface, self.name, font_label,
             (self.position[0], label_y),
-            (255, 255, 255), 2, True
+            (255, 255, 255), 3, True
         )
 
 
@@ -183,10 +174,14 @@ class SpatialOSAmbient:
         # Information ticker
         self.ticker_messages = [
             "MotiBeam Spatial OS - Revolutionary Ambient Computing Platform",
+            "ALERT: Medication Reminder - Blood Pressure Med due at 12:00 PM",
+            "APPOINTMENT: Dr. Smith - Tomorrow 2:30 PM - Annual Checkup",
+            "MISSED CALL: Mom called at 10:15 AM - Call back",
+            "WELLNESS: Vitamin D levels low - Recommend 15 mins sunlight today",
+            "REMINDER: Drink water - Only 3 of 8 glasses consumed today",
+            "ALERT: Weekly grocery delivery arriving 4:00 PM today",
             "9 Specialized Realms for Smart Living, Healthcare, Education & More",
-            "Cinema-Quality Visuals - Designed for 10-15ft Viewing Distance",
-            "Breathing Animations - The Wall Feels ALIVE",
-            "Press 1-9 to Enter Realms - P for Privacy - S for Sleep Mode",
+            "Press 1-9 to Enter Realms - Arrows to Navigate - Enter to Launch",
         ]
         self.ticker_x = self.width
         self.current_ticker_index = 0
@@ -197,20 +192,20 @@ class SpatialOSAmbient:
     def init_realm_orbs(self):
         """Initialize 9 realm orbs in a 3x3 grid with proper spacing"""
         realm_data = [
-            (1, "HOME", "HOME", self.theme.REALM_COLORS[1]),           # 🏡
-            (2, "CLINICAL", "CLINICAL", self.theme.REALM_COLORS[2]),   # ⚕️
-            (3, "EDUCATION", "EDUCATION", self.theme.REALM_COLORS[3]), # 📚
-            (4, "TRANSPORT", "TRANSPORT", self.theme.REALM_COLORS[4]), # 🚗
-            (5, "EMERGENCY", "EMERGENCY", self.theme.REALM_COLORS[5]), # 🚨
-            (6, "SECURITY", "SECURITY", self.theme.REALM_COLORS[6]),   # 🛡️
-            (7, "ENTERPRISE", "ENTERPRISE", self.theme.REALM_COLORS[7]), # 🏢
-            (8, "AVIATION", "AVIATION", self.theme.REALM_COLORS[8]),   # ✈️
-            (9, "MARITIME", "MARITIME", self.theme.REALM_COLORS[9]),   # ⚓
+            (1, "◉", "HOME & LIVING", self.theme.REALM_COLORS[1]),           # 🏡 Home
+            (2, "+", "CLINICAL & HEALTH", self.theme.REALM_COLORS[2]),        # ⚕️ Health
+            (3, "◆", "EDUCATION", self.theme.REALM_COLORS[3]),                # 📚 Learning
+            (4, "▣", "TRANSPORT", self.theme.REALM_COLORS[4]),                # 🚗 Vehicle
+            (5, "⚠", "EMERGENCY", self.theme.REALM_COLORS[5]),                # 🚨 Alert
+            (6, "◈", "SECURITY", self.theme.REALM_COLORS[6]),                 # 🛡️ Shield
+            (7, "■", "ENTERPRISE", self.theme.REALM_COLORS[7]),               # 🏢 Business
+            (8, "✈", "AVIATION", self.theme.REALM_COLORS[8]),                 # ✈️ Flight
+            (9, "⚓", "MARITIME", self.theme.REALM_COLORS[9]),                 # ⚓ Anchor
         ]
 
         # Calculate grid layout (3x3) with more spacing to prevent overlap
-        orb_area_top = 420
-        orb_area_height = self.height - orb_area_top - 180
+        orb_area_top = 380
+        orb_area_height = self.height - orb_area_top - 200
 
         grid_cols = 3
         grid_rows = 3
@@ -221,10 +216,10 @@ class SpatialOSAmbient:
 
         # Center the grid
         start_x = (self.width - (spacing_x * 2)) // 2
-        start_y = orb_area_top + 40
+        start_y = orb_area_top + 60
 
         self.orbs = []
-        for i, (realm_id, emoji, name, color) in enumerate(realm_data):
+        for i, (realm_id, symbol, name, color) in enumerate(realm_data):
             row = i // grid_cols
             col = i % grid_cols
 
@@ -232,7 +227,7 @@ class SpatialOSAmbient:
             y = start_y + (spacing_y * row)
 
             phase_offset = i * 0.7
-            orb = RealmOrb(realm_id, emoji, name, color, (x, y), phase_offset)
+            orb = RealmOrb(realm_id, symbol, name, color, (x, y), phase_offset)
             self.orbs.append(orb)
 
     def run(self):

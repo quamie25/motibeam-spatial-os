@@ -120,13 +120,15 @@ class ClinicalHealthPro(BaseRealm):
             Medication("Evening Supplement", "1 capsule", "20:00", (150, 255, 150)),
         ]
 
-        # Wellness metrics
-        self.activity_minutes = 0  # Daily activity minutes
+        # Wellness metrics (demo values)
+        self.activity_minutes = 20  # Daily activity minutes
         self.activity_goal = 30
-        self.water_intake = 0  # Glasses of water
+        self.water_intake = 6  # Glasses of water
         self.water_goal = 8
         self.stress_level = 3  # 1-10 scale
         self.sleep_hours = 7.5
+        self.sunlight_minutes = 10  # Minutes of sunlight today
+        self.sunlight_goal = 15
 
         # Caregiver notification system
         self.caregiver_notifications = []
@@ -146,20 +148,20 @@ class ClinicalHealthPro(BaseRealm):
     def generate_daily_recommendations(self) -> List[WellnessRecommendation]:
         """Generate daily wellness recommendations across Body/Mind/Spirit"""
         return [
-            # BODY recommendations
+            # BODY recommendations with specific metrics
             WellnessRecommendation(
-                "BODY", "Morning Walk",
-                "Take a 30-minute walk in sunlight for vitamin D and cardiovascular health",
+                "BODY", "20 min walk (10/30 min done)",
+                "Complete 30 min walk in sunlight for vitamin D and cardiovascular health",
                 "+"
             ),
             WellnessRecommendation(
-                "BODY", "Hydration Goal",
-                "Drink 8 glasses of water throughout the day to support all bodily functions",
+                "BODY", "Water 8/10 bottles (80% done)",
+                "Drink 2 more glasses - Stay hydrated for optimal body function",
                 "~"
             ),
             WellnessRecommendation(
-                "BODY", "Balanced Nutrition",
-                "Include colorful vegetables, lean protein, and whole grains in your meals",
+                "BODY", "15 min sunlight (Vitamin D low)",
+                "Get 5 more minutes of sunlight - Vitamin D levels need boost",
                 "*"
             ),
 
@@ -270,7 +272,10 @@ class ClinicalHealthPro(BaseRealm):
         self.render_medication_panel(60, y_start + 340, 900, 300)
 
         # Wellness score
-        self.render_wellness_score(1000, y_start + 340, 860, 300)
+        self.render_wellness_score(1000, y_start + 340, 860, 240)
+
+        # Caregiver button (separate, below wellness score)
+        self.render_caregiver_button(1050, y_start + 610)
 
     def render_category_buttons(self, x: int, y: int):
         """Render Body/Mind/Spirit category buttons"""
@@ -412,10 +417,8 @@ class ClinicalHealthPro(BaseRealm):
             (x + 20, y + 30), self.theme.TEXT_DIM, 2, False
         )
 
-        # Calculate score (simplified)
-        completed_recs = sum(1 for r in self.recommendations if r.completed)
-        total_recs = len(self.recommendations)
-        score = int((completed_recs / total_recs) * 100) if total_recs > 0 else 0
+        # Demo wellness score set to 87%
+        score = 87
 
         # Big score number
         score_text = f"{score}"
@@ -430,59 +433,272 @@ class ClinicalHealthPro(BaseRealm):
             (rect.centerx + 100, rect.centery + 20), self.theme.TEXT_DIM, 3, False
         )
 
-        # Caregiver button
-        btn_y = y + height - 80
-        btn_rect = pygame.Rect(x + 20, btn_y, width - 40, 60)
+    def render_caregiver_button(self, x: int, y: int):
+        """Render caregiver notification button separately"""
+        btn_width = 400
+        btn_height = 70
+        btn_rect = pygame.Rect(x, y, btn_width, btn_height)
+
+        # Button background with pulse
+        pulse = self.anim.pulse(self.time, 2.0)
+        alpha = int(40 * pulse)
+        bg_surf = pygame.Surface((btn_width, btn_height), pygame.SRCALPHA)
+        bg_surf.fill((255, 100, 100, alpha))
+        self.screen.blit(bg_surf, (x, y))
+
+        # Border
         pygame.draw.rect(self.screen, (255, 100, 100), btn_rect, 3)
 
+        # Text
         self.ui.draw_text_with_shadow(
             self.screen, "[C] NOTIFY CAREGIVER", self.font_medium,
             (btn_rect.centerx, btn_rect.centery), (255, 100, 100), 2, True
         )
 
     def render_body_view(self):
-        """Render detailed BODY view"""
+        """Render detailed BODY view with exercise and meal plans"""
         y_start = 280
 
         self.ui.draw_text_with_shadow(
-            self.screen, "BODY - Physical Health", self.font_large,
+            self.screen, "BODY - Physical Health & Wellness", self.font_large,
             (self.width // 2, y_start), (100, 200, 255), 3, True
         )
 
-        # Detailed vitals, activity tracking, nutrition
+        # Daily exercise plan
+        ex_y = y_start + 100
+        self.ui.draw_text_with_shadow(
+            self.screen, "TODAY'S EXERCISE PLAN", self.font_medium,
+            (120, ex_y), (100, 200, 255), 2, False
+        )
+
+        exercises = [
+            "[ ] Morning: 20-min brisk walk (Vitamin D boost)",
+            "[ ] Afternoon: 10 squats, 10 push-ups (Strength)",
+            "[✓] Evening: 15-min yoga stretching (Flexibility)",
+        ]
+        for i, ex in enumerate(exercises):
+            self.ui.draw_text_with_shadow(
+                self.screen, ex, self.font_small,
+                (140, ex_y + 60 + i * 45), self.theme.TEXT_NORMAL, 2, False
+            )
+
+        # Weekly goals
+        week_y = ex_y + 240
+        self.ui.draw_text_with_shadow(
+            self.screen, "WEEKLY GOALS", self.font_medium,
+            (120, week_y), (100, 200, 255), 2, False
+        )
+
+        weekly = [
+            "Activity: 150 mins (100/150 done - 67%)",
+            "Strength training: 2 sessions (1/2 done)",
+            "Water intake: 56 glasses (42/56 done - 75%)",
+        ]
+        for i, item in enumerate(weekly):
+            self.ui.draw_text_with_shadow(
+                self.screen, item, self.font_small,
+                (140, week_y + 60 + i * 45), self.theme.TEXT_NORMAL, 2, False
+            )
+
+        # Meal plan (right side)
+        meal_x = self.width // 2 + 100
+        self.ui.draw_text_with_shadow(
+            self.screen, "TODAY'S MEAL PLAN", self.font_medium,
+            (meal_x, ex_y), (100, 255, 150), 2, False
+        )
+
+        meals = [
+            "[✓] Breakfast: Oatmeal + berries + almonds",
+            "[ ] Lunch: Grilled chicken salad + quinoa",
+            "[ ] Snack: Greek yogurt + apple slices",
+            "[ ] Dinner: Salmon + broccoli + sweet potato",
+        ]
+        for i, meal in enumerate(meals):
+            self.ui.draw_text_with_shadow(
+                self.screen, meal, self.font_small,
+                (meal_x + 20, ex_y + 60 + i * 45), self.theme.TEXT_NORMAL, 2, False
+            )
+
+        # Nutrition goals
+        nutr_y = week_y
+        self.ui.draw_text_with_shadow(
+            self.screen, "NUTRITION GOALS", self.font_medium,
+            (meal_x, nutr_y), (100, 255, 150), 2, False
+        )
+
+        nutrition = [
+            "Protein: 120g (85/120g done - 71%)",
+            "Vegetables: 5 servings (3/5 done)",
+            "Fiber: 30g (22/30g done - 73%)",
+        ]
+        for i, item in enumerate(nutrition):
+            self.ui.draw_text_with_shadow(
+                self.screen, item, self.font_small,
+                (meal_x + 20, nutr_y + 60 + i * 45), self.theme.TEXT_NORMAL, 2, False
+            )
+
+        # Navigation
         self.ui.draw_text_with_shadow(
             self.screen, "Press D to return to Dashboard", self.font_normal,
-            (self.width // 2, y_start + 100), self.theme.TEXT_DIM, 2, True
+            (self.width // 2, self.height - 150), self.theme.TEXT_DIM, 2, True
         )
 
     def render_mind_view(self):
-        """Render detailed MIND view"""
+        """Render detailed MIND view with mental wellness activities"""
         y_start = 280
 
         self.ui.draw_text_with_shadow(
-            self.screen, "MIND - Mental Wellness", self.font_large,
+            self.screen, "MIND - Mental Wellness & Cognitive Health", self.font_large,
             (self.width // 2, y_start), (200, 100, 255), 3, True
         )
 
-        # Stress levels, mental exercises, cognition
+        # Daily mental exercises
+        mind_y = y_start + 100
+        self.ui.draw_text_with_shadow(
+            self.screen, "TODAY'S MENTAL EXERCISES", self.font_medium,
+            (120, mind_y), (200, 100, 255), 2, False
+        )
+
+        exercises = [
+            "[✓] Morning: 10-min guided meditation",
+            "[ ] Afternoon: Crossword puzzle (15 min)",
+            "[ ] Evening: Gratitude journaling (5 min)",
+        ]
+        for i, ex in enumerate(exercises):
+            self.ui.draw_text_with_shadow(
+                self.screen, ex, self.font_small,
+                (140, mind_y + 60 + i * 45), self.theme.TEXT_NORMAL, 2, False
+            )
+
+        # Stress management
+        stress_y = mind_y + 240
+        self.ui.draw_text_with_shadow(
+            self.screen, "STRESS MANAGEMENT", self.font_medium,
+            (120, stress_y), (200, 100, 255), 2, False
+        )
+
+        stress_info = [
+            f"Current stress level: {self.stress_level}/10 (Moderate)",
+            "Breathing exercises: 3/3 completed today",
+            "Digital detox: 2 hours screen-free achieved",
+        ]
+        for i, item in enumerate(stress_info):
+            self.ui.draw_text_with_shadow(
+                self.screen, item, self.font_small,
+                (140, stress_y + 60 + i * 45), self.theme.TEXT_NORMAL, 2, False
+            )
+
+        # Weekly cognitive goals (right side)
+        cog_x = self.width // 2 + 100
+        self.ui.draw_text_with_shadow(
+            self.screen, "WEEKLY COGNITIVE GOALS", self.font_medium,
+            (cog_x, mind_y), (255, 150, 255), 2, False
+        )
+
+        cognitive = [
+            "[ ] Read 30 pages (18/30 done - 60%)",
+            "[✓] Learn new skill (completed: cooking)",
+            "[ ] Social interaction: 3 conversations",
+            "[ ] Creative activity: 1 hour art/music",
+        ]
+        for i, goal in enumerate(cognitive):
+            self.ui.draw_text_with_shadow(
+                self.screen, goal, self.font_small,
+                (cog_x + 20, mind_y + 60 + i * 45), self.theme.TEXT_NORMAL, 2, False
+            )
+
+        # Navigation
         self.ui.draw_text_with_shadow(
             self.screen, "Press D to return to Dashboard", self.font_normal,
-            (self.width // 2, y_start + 100), self.theme.TEXT_DIM, 2, True
+            (self.width // 2, self.height - 150), self.theme.TEXT_DIM, 2, True
         )
 
     def render_spirit_view(self):
-        """Render detailed SPIRIT view"""
+        """Render detailed SPIRIT view with purpose and connection activities"""
         y_start = 280
 
         self.ui.draw_text_with_shadow(
-            self.screen, "SPIRIT - Emotional & Purposeful Living", self.font_large,
+            self.screen, "SPIRIT - Purpose, Connection & Inner Peace", self.font_large,
             (self.width // 2, y_start), (255, 150, 100), 3, True
         )
 
-        # Gratitude, purpose, connection
+        # Daily spiritual practices
+        spirit_y = y_start + 100
+        self.ui.draw_text_with_shadow(
+            self.screen, "TODAY'S SPIRITUAL PRACTICES", self.font_medium,
+            (120, spirit_y), (255, 150, 100), 2, False
+        )
+
+        practices = [
+            "[✓] Morning: Gratitude reflection (3 things)",
+            "[ ] Afternoon: Nature walk & mindfulness",
+            "[ ] Evening: Purpose journaling (5 min)",
+        ]
+        for i, practice in enumerate(practices):
+            self.ui.draw_text_with_shadow(
+                self.screen, practice, self.font_small,
+                (140, spirit_y + 60 + i * 45), self.theme.TEXT_NORMAL, 2, False
+            )
+
+        # Connection goals
+        conn_y = spirit_y + 240
+        self.ui.draw_text_with_shadow(
+            self.screen, "SOCIAL CONNECTION", self.font_medium,
+            (120, conn_y), (255, 150, 100), 2, False
+        )
+
+        connections = [
+            "[✓] Called Mom - 20 min conversation",
+            "[ ] Video chat with grandkids (scheduled 4pm)",
+            "[ ] Community group meeting tomorrow 10am",
+        ]
+        for i, conn in enumerate(connections):
+            self.ui.draw_text_with_shadow(
+                self.screen, conn, self.font_small,
+                (140, conn_y + 60 + i * 45), self.theme.TEXT_NORMAL, 2, False
+            )
+
+        # Purpose activities (right side)
+        purp_x = self.width // 2 + 100
+        self.ui.draw_text_with_shadow(
+            self.screen, "PURPOSE & VALUES", self.font_medium,
+            (purp_x, spirit_y), (255, 200, 150), 2, False
+        )
+
+        purpose = [
+            "Weekly volunteer work: 2 hours (Done!)",
+            "Hobby time: Gardening 30 min daily",
+            "Teaching grandkids: Cooking lesson Saturday",
+            "Personal growth: Reading philosophy",
+        ]
+        for i, item in enumerate(purpose):
+            self.ui.draw_text_with_shadow(
+                self.screen, item, self.font_small,
+                (purp_x + 20, spirit_y + 60 + i * 45), self.theme.TEXT_NORMAL, 2, False
+            )
+
+        # Monthly goals
+        month_y = conn_y
+        self.ui.draw_text_with_shadow(
+            self.screen, "MONTHLY SPIRITUAL GOALS", self.font_medium,
+            (purp_x, month_y), (255, 200, 150), 2, False
+        )
+
+        monthly = [
+            "Gratitude entries: 22/30 days (73%)",
+            "Acts of kindness: 8/10 done",
+            "Meditation streak: 18 consecutive days",
+        ]
+        for i, item in enumerate(monthly):
+            self.ui.draw_text_with_shadow(
+                self.screen, item, self.font_small,
+                (purp_x + 20, month_y + 60 + i * 45), self.theme.TEXT_NORMAL, 2, False
+            )
+
+        # Navigation
         self.ui.draw_text_with_shadow(
             self.screen, "Press D to return to Dashboard", self.font_normal,
-            (self.width // 2, y_start + 100), self.theme.TEXT_DIM, 2, True
+            (self.width // 2, self.height - 150), self.theme.TEXT_DIM, 2, True
         )
 
     def render_bio_particles(self):

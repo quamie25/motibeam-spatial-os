@@ -42,11 +42,22 @@ class BaseRealm:
         self.realm_color = realm_color
         self.theme = Theme()
 
-        # Pygame setup
-        pygame.init()
-        self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+        # Pygame setup - reuse existing display if available
+        try:
+            self.screen = pygame.display.get_surface()
+            if self.screen is None:
+                # No display exists, create one
+                pygame.init()
+                self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+            # Display exists, just update caption
+            pygame.display.set_caption(f"MotiBeam Spatial OS - {realm_name}")
+        except:
+            # Fallback: create new display
+            pygame.init()
+            self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+            pygame.display.set_caption(f"MotiBeam Spatial OS - {realm_name}")
+
         self.width, self.height = self.screen.get_size()
-        pygame.display.set_caption(f"MotiBeam Spatial OS - {realm_name}")
 
         # Clock for smooth 60 FPS
         self.clock = pygame.time.Clock()
