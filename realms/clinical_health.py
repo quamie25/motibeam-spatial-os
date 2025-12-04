@@ -11,15 +11,13 @@ Features:
 - Cinema-quality ambient health monitoring
 """
 
-import pygame
 import random
 import math
-import sys
 from typing import List, Tuple
 
-sys.path.insert(0, '/home/user/motibeam-spatial-os')
-
+# Import base realm (which already imports pygame)
 from realms.base_realm import BaseRealm
+import pygame  # Re-import for type hints and direct usage
 
 
 class VitalSign:

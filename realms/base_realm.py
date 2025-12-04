@@ -5,10 +5,13 @@ Foundation for all 9 realm implementations
 
 import pygame
 import sys
+import os
 from typing import Tuple
 
-# Add project root to path
-sys.path.insert(0, '/home/user/motibeam-spatial-os')
+# Add project root to path if not already there
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 
 from core.ui.framework import Theme, UIComponents, Animations
 

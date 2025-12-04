@@ -530,23 +530,25 @@ class SpatialOSAmbient:
         # Special handling for Clinical realm (only one implemented)
         if realm_num == 2:
             try:
-                # Import here to catch import errors
+                # Test import BEFORE quitting pygame
+                print(f"   Checking Clinical realm availability...")
                 try:
                     from realms.clinical_health import ClinicalHealthPro
+                    print(f"   ✓ Clinical realm loaded")
                 except ImportError as ie:
-                    print(f"❌ Import error: {ie}")
-                    print("   Make sure pygame is installed: pip3 install pygame")
-                    self.show_temp_message(f"ERROR: pygame not installed\npip3 install pygame", 3.0)
+                    print(f"   ❌ Import error: {ie}")
+                    print(f"   Make sure pygame is installed: pip3 install pygame")
+                    self.show_temp_message(f"ERROR: Cannot load Clinical realm\n{str(ie)}\n\nInstall: pip3 install pygame", 4.0)
                     return
 
                 # Save current state before cleanup
                 saved_time = self.time
 
                 # Cleanup current display
+                print(f"   Entering {realm_name} realm...")
                 pygame.quit()
 
                 # Launch Clinical realm
-                print(f"   Entering {realm_name} realm...")
                 clinical = ClinicalHealthPro()
                 result = clinical.run()
 
