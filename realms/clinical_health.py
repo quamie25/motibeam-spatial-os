@@ -198,11 +198,9 @@ class ClinicalHealthPro(BaseRealm):
         # Rotating affirmation at top
         affirmation_y = y_start + 80
         current_affirmation = self.affirmations[self.current_affirmation_index]
-        pulse = self.anim.breathe(self.time, 3.0)
-        affirmation_alpha = int(150 + 105 * pulse)
         self.ui.draw_text_with_shadow(
             self.screen, f'"{current_affirmation}"', self.font_medium,
-            (self.width // 2, affirmation_y), (*self.realm_color, affirmation_alpha), 3, True
+            (self.width // 2, affirmation_y), self.realm_color, 3, True
         )
 
         # Mood check-in (large, prominent)
