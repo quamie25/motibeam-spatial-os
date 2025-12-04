@@ -85,7 +85,11 @@ class BaseRealm:
                 if event.type == pygame.QUIT:
                     self.running = False
                 elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE or event.key == pygame.K_q:
+                    if event.key == pygame.K_ESCAPE:
+                        # ESC returns to homescreen (don't quit pygame here)
+                        self.running = False
+                    elif event.key == pygame.K_q:
+                        # Q also returns to homescreen
                         self.running = False
                     else:
                         self.handle_key(event.key)
@@ -95,7 +99,8 @@ class BaseRealm:
             self.render()
             pygame.display.flip()
 
-        pygame.quit()
+        # DON'T call pygame.quit() here - let homescreen manage that
+        # Just return the realm ID to signal we're done
         return self.realm_id
 
     def update(self, dt: float):

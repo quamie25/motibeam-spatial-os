@@ -1,23 +1,51 @@
 """
-MotiBeam Spatial OS - Clinical & Health Realm
-⚕️ Realm #2 - Professional healthcare monitoring and biometric visualization
+MotiBeam Spatial OS - Enhanced Clinical & Health Realm
+⚕️ Realm #2 - Comprehensive wellness monitoring with Body/Mind/Spirit approach
+
+Categories:
+- BODY: Vitals, activity, nutrition, medication
+- MIND: Mental wellness, stress, cognition
+- SPIRIT: Purpose, connection, gratitude
 
 Features:
-- Real-time vital signs monitoring (heart rate, BP, oxygen, temperature)
-- Breathing biometric visualization with ECG-style waveforms
-- Medical alert system with priority levels
-- Patient health metrics dashboard
-- Professional medical color scheme with breathing animations
-- Cinema-quality ambient health monitoring
+- Real-time vital signs monitoring
+- Daily wellness recommendations
+- Medication reminders with notifications
+- Caregiver notification system
+- Holistic health tracking
 """
 
 import random
 import math
-from typing import List, Tuple
+from typing import List, Tuple, Dict
+from datetime import datetime, timedelta
 
 # Import base realm (which already imports pygame)
 from realms.base_realm import BaseRealm
 import pygame  # Re-import for type hints and direct usage
+
+
+class WellnessRecommendation:
+    """Daily wellness recommendation"""
+
+    def __init__(self, category: str, title: str, description: str, icon: str):
+        self.category = category  # BODY, MIND, or SPIRIT
+        self.title = title
+        self.description = description
+        self.icon = icon
+        self.completed = False
+
+
+class Medication:
+    """Medication reminder"""
+
+    def __init__(self, name: str, dosage: str, time_str: str, color: Tuple[int, int, int]):
+        self.name = name
+        self.dosage = dosage
+        self.time_str = time_str
+        self.color = color
+        self.taken = False
+        self.notified = False
 
 
 class VitalSign:
@@ -61,71 +89,20 @@ class VitalSign:
                      self.current_value > self.max_val - safe_range)
 
 
-class ECGWaveform:
-    """Simulated ECG waveform generator"""
-
-    def __init__(self):
-        self.phase = 0.0
-        self.heart_rate = 72  # BPM
-        self.points: List[float] = []
-
-    def update(self, dt: float):
-        """Generate ECG waveform points"""
-        beats_per_second = self.heart_rate / 60.0
-        phase_speed = beats_per_second * math.pi * 2
-
-        self.phase += phase_speed * dt
-
-        # Simplified ECG pattern (P-QRS-T waves)
-        t = self.phase % (math.pi * 2)
-
-        if t < 0.3:  # P wave
-            value = math.sin(t / 0.3 * math.pi) * 0.2
-        elif 0.5 < t < 0.9:  # QRS complex
-            sub_t = (t - 0.5) / 0.4
-            if sub_t < 0.2:
-                value = -sub_t * 2  # Q
-            elif sub_t < 0.5:
-                value = (sub_t - 0.2) * 8 - 0.4  # R
-            else:
-                value = (1 - (sub_t - 0.5) / 0.5) * 2 - 0.5  # S
-        elif 1.2 < t < 1.8:  # T wave
-            value = math.sin((t - 1.2) / 0.6 * math.pi) * 0.3
-        else:
-            value = 0
-
-        self.points.append(value)
-        if len(self.points) > 300:
-            self.points.pop(0)
-
-
-class MedicalAlert:
-    """Medical alert notification"""
-
-    def __init__(self, title: str, message: str, priority: str, color: Tuple[int, int, int]):
-        self.title = title
-        self.message = message
-        self.priority = priority  # "LOW", "MEDIUM", "HIGH", "CRITICAL"
-        self.color = color
-        self.age = 0.0
-        self.acknowledged = False
-
-    def update(self, dt: float):
-        """Update alert age"""
-        self.age += dt
-
-
 class ClinicalHealthPro(BaseRealm):
-    """Clinical & Health Realm - Professional healthcare monitoring"""
+    """Enhanced Clinical & Health Realm with Body/Mind/Spirit approach"""
 
     def __init__(self):
         super().__init__(
             realm_id=2,
-            realm_name="CLINICAL & HEALTH",
+            realm_name="CLINICAL & HEALTH WELLNESS",
             realm_color=(80, 255, 120)
         )
 
-        # Initialize vital signs
+        # Current view mode
+        self.view_mode = "DASHBOARD"  # DASHBOARD, BODY, MIND, SPIRIT
+
+        # Initialize vital signs (BODY)
         self.vital_signs = [
             VitalSign("HEART RATE", 72, "BPM", 45, 100, 8, (255, 100, 120)),
             VitalSign("BLOOD PRESSURE", 120, "mmHg", 90, 140, 5, (100, 200, 255)),
@@ -133,23 +110,93 @@ class ClinicalHealthPro(BaseRealm):
             VitalSign("TEMPERATURE", 98.6, "°F", 97.0, 99.5, 0.5, (255, 200, 100)),
         ]
 
-        # ECG waveform
-        self.ecg = ECGWaveform()
-        self.ecg.heart_rate = self.vital_signs[0].current_value
+        # Daily wellness recommendations
+        self.recommendations = self.generate_daily_recommendations()
 
-        # Medical alerts
-        self.alerts: List[MedicalAlert] = []
-        self.alert_timer = 0.0
+        # Medication reminders
+        self.medications = [
+            Medication("Vitamin D", "1000 IU", "08:00", (255, 200, 100)),
+            Medication("Blood Pressure Med", "10mg", "12:00", (100, 200, 255)),
+            Medication("Evening Supplement", "1 capsule", "20:00", (150, 255, 150)),
+        ]
 
-        # Biometric visualization
+        # Wellness metrics
+        self.activity_minutes = 0  # Daily activity minutes
+        self.activity_goal = 30
+        self.water_intake = 0  # Glasses of water
+        self.water_goal = 8
+        self.stress_level = 3  # 1-10 scale
+        self.sleep_hours = 7.5
+
+        # Caregiver notification system
+        self.caregiver_notifications = []
+        self.caregiver_contact = "Dr. Smith"
+
+        # Biometric particles
         self.bio_particles: List[dict] = []
         self.particle_timer = 0.0
 
-        # Patient info (simulated)
-        self.patient_name = "PATIENT 7429"
-        self.patient_status = "STABLE"
+        # Patient info
+        self.patient_name = "WELLNESS USER"
+        self.patient_status = "HEALTHY"
 
-        print("🩺 Clinical & Health Realm initialized")
+        print("🩺 Enhanced Clinical & Health Realm initialized")
+        print("   Body/Mind/Spirit wellness tracking active")
+
+    def generate_daily_recommendations(self) -> List[WellnessRecommendation]:
+        """Generate daily wellness recommendations across Body/Mind/Spirit"""
+        return [
+            # BODY recommendations
+            WellnessRecommendation(
+                "BODY", "Morning Walk",
+                "Take a 30-minute walk in sunlight for vitamin D and cardiovascular health",
+                "+"
+            ),
+            WellnessRecommendation(
+                "BODY", "Hydration Goal",
+                "Drink 8 glasses of water throughout the day to support all bodily functions",
+                "~"
+            ),
+            WellnessRecommendation(
+                "BODY", "Balanced Nutrition",
+                "Include colorful vegetables, lean protein, and whole grains in your meals",
+                "*"
+            ),
+
+            # MIND recommendations
+            WellnessRecommendation(
+                "MIND", "Mindful Breathing",
+                "Practice 5 minutes of deep breathing to reduce stress and improve focus",
+                "o"
+            ),
+            WellnessRecommendation(
+                "MIND", "Mental Stimulation",
+                "Engage in a puzzle, read, or learn something new to keep mind sharp",
+                "#"
+            ),
+            WellnessRecommendation(
+                "MIND", "Digital Detox",
+                "Take 1 hour away from screens to reduce mental fatigue",
+                "-"
+            ),
+
+            # SPIRIT recommendations
+            WellnessRecommendation(
+                "SPIRIT", "Gratitude Practice",
+                "Write down 3 things you're grateful for to foster positive mindset",
+                "*"
+            ),
+            WellnessRecommendation(
+                "SPIRIT", "Social Connection",
+                "Reach out to a friend or family member for meaningful conversation",
+                "+"
+            ),
+            WellnessRecommendation(
+                "SPIRIT", "Purpose Reflection",
+                "Spend time on an activity that aligns with your values and brings joy",
+                "~"
+            ),
+        ]
 
     def update(self, dt: float):
         """Update clinical monitoring system"""
@@ -157,22 +204,15 @@ class ClinicalHealthPro(BaseRealm):
         for vital in self.vital_signs:
             vital.update(dt)
 
-        # Sync ECG with heart rate
-        self.ecg.heart_rate = self.vital_signs[0].current_value
-        self.ecg.update(dt)
-
-        # Generate alerts occasionally
-        self.alert_timer += dt
-        if self.alert_timer > 15.0:  # Every 15 seconds
-            self.alert_timer = 0.0
-            if random.random() < 0.3:  # 30% chance
-                self.generate_random_alert()
-
-        # Update alerts
-        for alert in self.alerts[:]:
-            alert.update(dt)
-            if alert.age > 30.0:  # Remove after 30 seconds
-                self.alerts.remove(alert)
+        # Check medications
+        current_time = datetime.now()
+        for med in self.medications:
+            # Check if it's time for medication (simplified)
+            if not med.taken and not med.notified:
+                # In real app, would check actual time
+                if random.random() < 0.001:  # Random notification for demo
+                    med.notified = True
+                    self.notify_medication(med)
 
         # Update biometric particles
         self.particle_timer += dt
@@ -189,211 +229,261 @@ class ClinicalHealthPro(BaseRealm):
                 self.bio_particles.remove(particle)
 
     def render(self):
-        """Render clinical monitoring interface"""
+        """Render clinical wellness interface"""
         # Background
         self.screen.fill(self.theme.BG_DEEP)
 
-        # Render biometric particles (ambient background)
+        # Render biometric particles
         self.render_bio_particles()
 
-        # Header
-        self.draw_header("CLINICAL & HEALTH MONITORING", f"Patient: {self.patient_name}")
+        # Header with view mode indicator
+        self.draw_header(f"CLINICAL WELLNESS - {self.view_mode}", f"Patient: {self.patient_name}")
 
-        # Main content area
-        content_y = 280
-        content_height = self.height - content_y - 100
+        # Render based on current view mode
+        if self.view_mode == "DASHBOARD":
+            self.render_dashboard_view()
+        elif self.view_mode == "BODY":
+            self.render_body_view()
+        elif self.view_mode == "MIND":
+            self.render_mind_view()
+        elif self.view_mode == "SPIRIT":
+            self.render_spirit_view()
 
-        # Left side: Vital signs grid (4 panels)
-        self.render_vital_signs_grid(60, content_y, 900, content_height)
+        # Footer with navigation
+        controls = "ESC: Exit  │  B: Body  │  M: Mind  │  S: Spirit  │  D: Dashboard  │  C: Call Caregiver"
+        self.draw_footer(controls)
 
-        # Center: ECG waveform
-        self.render_ecg_waveform(1000, content_y, 800, 400)
+    def render_dashboard_view(self):
+        """Render main dashboard with overview"""
+        y_start = 280
 
-        # Right: Medical alerts
-        self.render_medical_alerts(1000, content_y + 450, 800, content_height - 450)
+        # Category buttons at top
+        self.render_category_buttons(60, y_start)
 
-        # Footer
-        self.draw_footer("ESC: Exit  │  SPACE: Acknowledge Alerts  │  R: Reset Vitals")
+        # Quick vitals summary
+        self.render_quick_vitals(60, y_start + 100, 600, 200)
 
-        # Status indicator
-        self.render_status_indicator()
+        # Today's recommendations
+        self.render_recommendations_summary(700, y_start + 100, 1160, 200)
 
-    def render_vital_signs_grid(self, x: int, y: int, width: int, height: int):
-        """Render 2x2 grid of vital sign panels"""
-        panel_width = (width - 30) // 2
-        panel_height = (height - 30) // 2
+        # Medication reminders
+        self.render_medication_panel(60, y_start + 340, 900, 300)
 
-        positions = [
-            (x, y),  # Top-left
-            (x + panel_width + 30, y),  # Top-right
-            (x, y + panel_height + 30),  # Bottom-left
-            (x + panel_width + 30, y + panel_height + 30),  # Bottom-right
+        # Wellness score
+        self.render_wellness_score(1000, y_start + 340, 860, 300)
+
+    def render_category_buttons(self, x: int, y: int):
+        """Render Body/Mind/Spirit category buttons"""
+        categories = [
+            ("B", "BODY", (100, 200, 255)),
+            ("M", "MIND", (200, 100, 255)),
+            ("S", "SPIRIT", (255, 150, 100)),
         ]
 
-        for i, vital in enumerate(self.vital_signs):
-            px, py = positions[i]
-            rect = pygame.Rect(px, py, panel_width, panel_height)
+        button_width = 200
+        spacing = 40
 
-            # Draw panel with alert flash
-            color = vital.color
-            if vital.alert:
-                flash = (math.sin(self.time * 8) + 1) / 2
-                color = tuple(min(255, int(c * (0.5 + flash * 0.5))) for c in color)
+        for i, (key, name, color) in enumerate(categories):
+            bx = x + i * (button_width + spacing)
 
-            # Panel background
+            # Button background
             pulse = self.anim.pulse(self.time + i * 0.5, 1.5)
-            alpha = int(40 * pulse)
-            bg_surf = pygame.Surface((panel_width, panel_height), pygame.SRCALPHA)
-            bg_surf.fill((*self.theme.BG_MID, alpha))
-            self.screen.blit(bg_surf, (px, py))
+            alpha = int(50 * pulse)
+            rect = pygame.Rect(bx, y, button_width, 60)
+
+            bg_surf = pygame.Surface((button_width, 60), pygame.SRCALPHA)
+            bg_surf.fill((*color, alpha))
+            self.screen.blit(bg_surf, (bx, y))
 
             # Border
-            border_width = 4 if vital.alert else 2
-            pygame.draw.rect(self.screen, color, rect, border_width)
+            pygame.draw.rect(self.screen, color, rect, 3)
 
-            # Title
+            # Text
+            text = f"[{key}] {name}"
             self.ui.draw_text_with_shadow(
-                self.screen, vital.name, self.font_normal,
-                (rect.centerx, py + 40), self.theme.TEXT_DIM, 2, True
+                self.screen, text, self.font_normal,
+                (rect.centerx, rect.centery), color, 2, True
             )
 
-            # Value
-            value_text = f"{int(vital.current_value)}"
-            self.ui.draw_text_with_shadow(
-                self.screen, value_text, self.font_huge,
-                (rect.centerx, rect.centery), color, 4, True
-            )
-
-            # Unit
-            self.ui.draw_text_with_shadow(
-                self.screen, vital.unit, self.font_medium,
-                (rect.centerx, py + panel_height - 50), self.theme.TEXT_DIM, 2, True
-            )
-
-            # Mini trend graph
-            self.render_mini_trend(vital, px + 20, py + panel_height - 120, panel_width - 40, 60)
-
-    def render_mini_trend(self, vital: VitalSign, x: int, y: int, width: int, height: int):
-        """Render mini trend graph for vital sign"""
-        if len(vital.history) < 2:
-            return
-
-        # Normalize history to graph bounds
-        min_val = min(vital.history)
-        max_val = max(vital.history)
-        value_range = max_val - min_val if max_val != min_val else 1
-
-        points = []
-        for i, value in enumerate(vital.history):
-            px = x + int((i / len(vital.history)) * width)
-            normalized = (value - min_val) / value_range
-            py = y + height - int(normalized * height)
-            points.append((px, py))
-
-        # Draw trend line with glow
-        if len(points) > 1:
-            self.ui.draw_glowing_line(self.screen, points[0], points[0], vital.color, 1, 0)
-            for i in range(1, len(points)):
-                pygame.draw.line(self.screen, vital.color, points[i - 1], points[i], 2)
-
-    def render_ecg_waveform(self, x: int, y: int, width: int, height: int):
-        """Render ECG waveform visualization"""
-        # Panel background
+    def render_quick_vitals(self, x: int, y: int, width: int, height: int):
+        """Render quick vitals summary"""
         rect = pygame.Rect(x, y, width, height)
-        pulse = self.anim.pulse(self.time, 1.5)
-        alpha = int(35 * pulse)
-        bg_surf = pygame.Surface((width, height), pygame.SRCALPHA)
-        bg_surf.fill((*self.theme.BG_MID, alpha))
-        self.screen.blit(bg_surf, (x, y))
 
-        # Border
-        pygame.draw.rect(self.screen, (255, 100, 120), rect, 2)
+        # Background
+        bg_surf = pygame.Surface((width, height), pygame.SRCALPHA)
+        bg_surf.fill((*self.theme.BG_MID, 40))
+        self.screen.blit(bg_surf, (x, y))
+        pygame.draw.rect(self.screen, self.realm_color, rect, 2)
 
         # Title
         self.ui.draw_text_with_shadow(
-            self.screen, "ELECTROCARDIOGRAM (ECG)", self.font_medium,
-            (rect.centerx, y + 40), self.theme.TEXT_DIM, 2, True
+            self.screen, "VITALS", self.font_normal,
+            (x + 20, y + 30), self.theme.TEXT_DIM, 2, False
         )
 
-        # Grid lines (medical chart style)
-        grid_color = (40, 60, 80)
-        for i in range(0, width, 40):
-            pygame.draw.line(self.screen, grid_color, (x + i, y + 80), (x + i, y + height - 20), 1)
-        for i in range(80, height - 20, 40):
-            pygame.draw.line(self.screen, grid_color, (x, y + i), (x + width, y + i), 1)
+        # Quick vital values (2x2 grid)
+        for i, vital in enumerate(self.vital_signs):
+            col = i % 2
+            row = i // 2
+            vx = x + 40 + col * 280
+            vy = y + 80 + row * 50
 
-        # Waveform
-        if len(self.ecg.points) > 1:
-            waveform_y = y + height // 2
-            scale = 100
+            value_text = f"{vital.name[:3]}: {int(vital.current_value)}{vital.unit}"
+            color = vital.color if not vital.alert else self.theme.STATUS_ERROR
 
-            points = []
-            for i, value in enumerate(self.ecg.points):
-                px = x + width - (len(self.ecg.points) - i) * (width // len(self.ecg.points))
-                py = waveform_y - int(value * scale)
-                points.append((px, py))
+            self.ui.draw_text_with_shadow(
+                self.screen, value_text, self.font_small,
+                (vx, vy), color, 2, False
+            )
 
-            # Draw waveform with glow
-            for i in range(1, len(points)):
-                self.ui.draw_glowing_line(self.screen, points[i - 1], points[i], (100, 255, 120), 3, 2)
-
-        # Heart rate display
-        hr_text = f"{int(self.ecg.heart_rate)} BPM"
-        self.ui.draw_text_with_shadow(
-            self.screen, hr_text, self.font_large,
-            (rect.centerx, y + height - 80), (255, 100, 120), 3, True
-        )
-
-    def render_medical_alerts(self, x: int, y: int, width: int, height: int):
-        """Render medical alerts panel"""
-        # Panel background
+    def render_recommendations_summary(self, x: int, y: int, width: int, height: int):
+        """Render daily recommendations summary"""
         rect = pygame.Rect(x, y, width, height)
-        bg_surf = pygame.Surface((width, height), pygame.SRCALPHA)
-        bg_surf.fill((*self.theme.BG_MID, 35))
-        self.screen.blit(bg_surf, (x, y))
 
-        # Border
-        pygame.draw.rect(self.screen, self.theme.ACCENT_PRIMARY, rect, 2)
+        # Background
+        bg_surf = pygame.Surface((width, height), pygame.SRCALPHA)
+        bg_surf.fill((*self.theme.BG_MID, 40))
+        self.screen.blit(bg_surf, (x, y))
+        pygame.draw.rect(self.screen, (255, 200, 100), rect, 2)
 
         # Title
         self.ui.draw_text_with_shadow(
-            self.screen, "MEDICAL ALERTS", self.font_medium,
-            (rect.centerx, y + 30), self.theme.TEXT_DIM, 2, True
+            self.screen, "TODAY'S WELLNESS GOALS", self.font_normal,
+            (x + 20, y + 30), self.theme.TEXT_DIM, 2, False
         )
 
-        # Alerts
-        if not self.alerts:
-            no_alert_text = "✓ NO ACTIVE ALERTS"
+        # Show first 3 uncompleted recommendations
+        ry = y + 80
+        count = 0
+        for rec in self.recommendations:
+            if not rec.completed and count < 3:
+                status = "[✓]" if rec.completed else "[ ]"
+                text = f"{status} {rec.category}: {rec.title}"
+
+                self.ui.draw_text_with_shadow(
+                    self.screen, text, self.font_small,
+                    (x + 40, ry), self.theme.TEXT_NORMAL, 2, False
+                )
+                ry += 40
+                count += 1
+
+    def render_medication_panel(self, x: int, y: int, width: int, height: int):
+        """Render medication reminders"""
+        rect = pygame.Rect(x, y, width, height)
+
+        # Background
+        bg_surf = pygame.Surface((width, height), pygame.SRCALPHA)
+        bg_surf.fill((*self.theme.BG_MID, 40))
+        self.screen.blit(bg_surf, (x, y))
+        pygame.draw.rect(self.screen, (100, 200, 255), rect, 2)
+
+        # Title
+        self.ui.draw_text_with_shadow(
+            self.screen, "MEDICATION REMINDERS", self.font_normal,
+            (x + 20, y + 30), self.theme.TEXT_DIM, 2, False
+        )
+
+        # Medications
+        my = y + 80
+        for med in self.medications:
+            status = "[✓]" if med.taken else "[!]"
+            text = f"{status} {med.time_str} - {med.name} ({med.dosage})"
+            color = self.theme.TEXT_DIM if med.taken else med.color
+
             self.ui.draw_text_with_shadow(
-                self.screen, no_alert_text, self.font_normal,
-                (rect.centerx, rect.centery), self.theme.STATUS_SUCCESS, 2, True
+                self.screen, text, self.font_small,
+                (x + 40, my), color, 2, False
             )
-        else:
-            alert_y = y + 80
-            for alert in self.alerts[:3]:  # Show max 3 alerts
-                # Alert background with pulse
-                pulse = (math.sin(self.time * 4 + alert.age) + 1) / 2
-                alert_rect = pygame.Rect(x + 20, alert_y, width - 40, 80)
-                alpha = int(50 + pulse * 30)
-                alert_bg = pygame.Surface((width - 40, 80), pygame.SRCALPHA)
-                alert_bg.fill((*alert.color, alpha))
-                self.screen.blit(alert_bg, (x + 20, alert_y))
+            my += 50
 
-                # Alert border
-                pygame.draw.rect(self.screen, alert.color, alert_rect, 2)
+    def render_wellness_score(self, x: int, y: int, width: int, height: int):
+        """Render overall wellness score"""
+        rect = pygame.Rect(x, y, width, height)
 
-                # Alert text
-                self.ui.draw_text_with_shadow(
-                    self.screen, f"[{alert.priority}] {alert.title}", self.font_normal,
-                    (x + 40, alert_y + 20), alert.color, 2, False
-                )
+        # Background
+        bg_surf = pygame.Surface((width, height), pygame.SRCALPHA)
+        bg_surf.fill((*self.theme.BG_MID, 40))
+        self.screen.blit(bg_surf, (x, y))
+        pygame.draw.rect(self.screen, self.realm_color, rect, 2)
 
-                self.ui.draw_text_with_shadow(
-                    self.screen, alert.message, self.font_small,
-                    (x + 40, alert_y + 55), self.theme.TEXT_DIM, 2, False
-                )
+        # Title
+        self.ui.draw_text_with_shadow(
+            self.screen, "WELLNESS SCORE", self.font_normal,
+            (x + 20, y + 30), self.theme.TEXT_DIM, 2, False
+        )
 
-                alert_y += 100
+        # Calculate score (simplified)
+        completed_recs = sum(1 for r in self.recommendations if r.completed)
+        total_recs = len(self.recommendations)
+        score = int((completed_recs / total_recs) * 100) if total_recs > 0 else 0
+
+        # Big score number
+        score_text = f"{score}"
+        self.ui.draw_text_with_shadow(
+            self.screen, score_text, self.font_huge,
+            (rect.centerx - 100, rect.centery + 20), self.realm_color, 4, False
+        )
+
+        # Percent sign
+        self.ui.draw_text_with_shadow(
+            self.screen, "%", self.font_large,
+            (rect.centerx + 100, rect.centery + 20), self.theme.TEXT_DIM, 3, False
+        )
+
+        # Caregiver button
+        btn_y = y + height - 80
+        btn_rect = pygame.Rect(x + 20, btn_y, width - 40, 60)
+        pygame.draw.rect(self.screen, (255, 100, 100), btn_rect, 3)
+
+        self.ui.draw_text_with_shadow(
+            self.screen, "[C] NOTIFY CAREGIVER", self.font_medium,
+            (btn_rect.centerx, btn_rect.centery), (255, 100, 100), 2, True
+        )
+
+    def render_body_view(self):
+        """Render detailed BODY view"""
+        y_start = 280
+
+        self.ui.draw_text_with_shadow(
+            self.screen, "BODY - Physical Health", self.font_large,
+            (self.width // 2, y_start), (100, 200, 255), 3, True
+        )
+
+        # Detailed vitals, activity tracking, nutrition
+        self.ui.draw_text_with_shadow(
+            self.screen, "Press D to return to Dashboard", self.font_normal,
+            (self.width // 2, y_start + 100), self.theme.TEXT_DIM, 2, True
+        )
+
+    def render_mind_view(self):
+        """Render detailed MIND view"""
+        y_start = 280
+
+        self.ui.draw_text_with_shadow(
+            self.screen, "MIND - Mental Wellness", self.font_large,
+            (self.width // 2, y_start), (200, 100, 255), 3, True
+        )
+
+        # Stress levels, mental exercises, cognition
+        self.ui.draw_text_with_shadow(
+            self.screen, "Press D to return to Dashboard", self.font_normal,
+            (self.width // 2, y_start + 100), self.theme.TEXT_DIM, 2, True
+        )
+
+    def render_spirit_view(self):
+        """Render detailed SPIRIT view"""
+        y_start = 280
+
+        self.ui.draw_text_with_shadow(
+            self.screen, "SPIRIT - Emotional & Purposeful Living", self.font_large,
+            (self.width // 2, y_start), (255, 150, 100), 3, True
+        )
+
+        # Gratitude, purpose, connection
+        self.ui.draw_text_with_shadow(
+            self.screen, "Press D to return to Dashboard", self.font_normal,
+            (self.width // 2, y_start + 100), self.theme.TEXT_DIM, 2, True
+        )
 
     def render_bio_particles(self):
         """Render ambient biometric particles"""
@@ -406,28 +496,6 @@ class ClinicalHealthPro(BaseRealm):
                 pygame.draw.circle(s, color, (size, size), size)
                 self.screen.blit(s, (int(particle['x']) - size, int(particle['y']) - size))
 
-    def render_status_indicator(self):
-        """Render patient status indicator in top-right"""
-        status_x = self.width - 300
-        status_y = 100
-
-        # Status color
-        if self.patient_status == "STABLE":
-            status_color = self.theme.STATUS_SUCCESS
-        elif self.patient_status == "MONITORING":
-            status_color = self.theme.STATUS_WARNING
-        else:
-            status_color = self.theme.STATUS_ERROR
-
-        # Pulsing circle
-        self.ui.draw_breathing_circle(self.screen, (status_x, status_y), 20, status_color, self.time)
-
-        # Status text
-        self.ui.draw_text_with_shadow(
-            self.screen, self.patient_status, self.font_medium,
-            (status_x + 40, status_y), status_color, 2, False
-        )
-
     def spawn_bio_particle(self):
         """Spawn ambient biometric particle"""
         self.bio_particles.append({
@@ -439,33 +507,40 @@ class ClinicalHealthPro(BaseRealm):
             'size': random.randint(2, 6),
         })
 
-    def generate_random_alert(self):
-        """Generate a random medical alert"""
-        alert_types = [
-            ("Vitals Check", "Routine vital signs within normal range", "LOW", self.theme.STATUS_INFO),
-            ("Medication Due", "Next medication scheduled in 15 minutes", "MEDIUM", self.theme.STATUS_WARNING),
-            ("Elevated Heart Rate", "Heart rate slightly elevated, monitoring", "MEDIUM", self.theme.STATUS_WARNING),
-            ("Lab Results Ready", "Recent lab work available for review", "LOW", self.theme.STATUS_INFO),
-        ]
+    def notify_medication(self, med: Medication):
+        """Send medication reminder notification"""
+        print(f"   💊 Medication reminder: {med.name} ({med.dosage})")
 
-        alert_data = random.choice(alert_types)
-        alert = MedicalAlert(*alert_data)
-        self.alerts.append(alert)
+    def notify_caregiver(self, message: str):
+        """Notify caregiver"""
+        print(f"   📞 Notifying caregiver: {self.caregiver_contact}")
+        print(f"      Message: {message}")
+        self.caregiver_notifications.append({
+            'time': datetime.now(),
+            'message': message
+        })
 
     def handle_key(self, key: int):
         """Handle realm-specific controls"""
-        if key == pygame.K_SPACE:
-            # Acknowledge all alerts
-            self.alerts.clear()
-        elif key == pygame.K_r:
-            # Reset vitals to baseline
-            for vital in self.vital_signs:
-                vital.current_value = vital.base_value
-                vital.trend = 0.0
+        if key == pygame.K_b:
+            self.view_mode = "BODY"
+            print("   Switching to BODY view")
+        elif key == pygame.K_m:
+            self.view_mode = "MIND"
+            print("   Switching to MIND view")
+        elif key == pygame.K_s:
+            self.view_mode = "SPIRIT"
+            print("   Switching to SPIRIT view")
+        elif key == pygame.K_d:
+            self.view_mode = "DASHBOARD"
+            print("   Switching to DASHBOARD view")
+        elif key == pygame.K_c:
+            # Notify caregiver
+            self.notify_caregiver("Wellness check requested by user")
 
 
 def main():
-    """Run Clinical & Health Realm standalone"""
+    """Run Enhanced Clinical & Health Realm standalone"""
     realm = ClinicalHealthPro()
     realm.run()
 
