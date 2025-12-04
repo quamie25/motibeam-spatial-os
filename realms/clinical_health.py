@@ -291,7 +291,7 @@ class ClinicalHealthPro(BaseRealm):
         # Breathing circle indicator (visual status)
         pulse = self.anim.breathe(self.time, 2.0)
         circle_radius = int(15 + 8 * pulse)
-        status_color = self.theme.STATUS_ERROR if vital.alert else self.theme.STATUS_OK
+        status_color = self.theme.STATUS_ERROR if vital.alert else self.theme.STATUS_SUCCESS
 
         self.ui.draw_breathing_circle(
             self.screen, (x + card_width - 40, y + 40),
