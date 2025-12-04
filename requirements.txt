@@ -1,0 +1,7 @@
+# MotiBeam Spatial OS - Python Dependencies
+
+# Core display and UI
+pygame>=2.5.0
+
+# Optional: For future weather API integration
+# requests>=2.31.0

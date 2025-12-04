@@ -98,20 +98,20 @@ class RealmOrb:
             num_rect = num_text.get_rect(center=self.position)
             surface.blit(num_text, num_rect)
 
+        # Realm number INSIDE orb (top) - PROMINENT
+        num_y_inside = self.position[1] - int(radius * 0.4)
+        ui.draw_text_with_shadow(
+            surface, str(self.realm_id), font_label,
+            (self.position[0], num_y_inside),
+            (255, 255, 255), 3, True
+        )
+
         # Realm name below orb
         label_y = self.position[1] + int(radius) + 40
         ui.draw_text_with_shadow(
             surface, self.name, font_label,
             (self.position[0], label_y),
             (255, 255, 255), 2, True
-        )
-
-        # Realm number in corner
-        num_y = self.position[1] - int(radius) - 30
-        ui.draw_text_with_shadow(
-            surface, str(self.realm_id), font_label,
-            (self.position[0], num_y),
-            self.color, 2, True
         )
 
 
@@ -173,6 +173,10 @@ class SpatialOSAmbient:
         # Modes
         self.privacy_mode = False
         self.sleep_mode = False
+
+        # Realm selector (optional keyboard navigation)
+        self.selected_realm = 2  # Default to Clinical realm (implemented)
+        self.selector_visible = True
 
         # Initialize 9 realm orbs
         self.init_realm_orbs()
@@ -333,6 +337,10 @@ class SpatialOSAmbient:
         for orb in self.orbs:
             orb.draw(self.screen, self.time, self.ui, self.font_emoji, self.font_label)
 
+            # Draw selector highlight on selected realm
+            if self.selector_visible and orb.realm_id == self.selected_realm:
+                self.draw_realm_selector(orb)
+
         # Information ticker at bottom
         self.render_ticker()
 
@@ -391,7 +399,7 @@ class SpatialOSAmbient:
 
     def render_instructions(self):
         """Render subtle instructions"""
-        instructions = "1-9: REALMS  │  P: PRIVACY  │  S: SLEEP  │  Q: EXIT"
+        instructions = "1-9 or ARROWS: SELECT  │  ENTER: LAUNCH  │  P: PRIVACY  │  S: SLEEP  │  Q: EXIT"
 
         self.ui.draw_text_with_shadow(
             self.screen, instructions, self.font_label,
@@ -418,6 +426,30 @@ class SpatialOSAmbient:
             self.screen, time_str, self.font_date,
             (self.width // 2, self.height // 2 + 80),
             (80, 80, 80), 2, True
+        )
+
+    def draw_realm_selector(self, orb: RealmOrb):
+        """Draw pulsing selector highlight around selected realm orb"""
+        pulse = self.anim.breathe(self.time * 2, 3.0)  # Faster pulse for selector
+        base_radius = orb.base_radius * orb.hover_scale
+
+        # Multiple pulsing rings
+        for i in range(3):
+            ring_radius = int(base_radius * pulse * (1.0 + i * 0.1)) + 20 + (i * 10)
+            ring_width = max(2, int(5 - i))
+            ring_alpha = max(0, int((180 - i * 40) * pulse))
+            ring_color = (*orb.color, ring_alpha)
+
+            # Draw ring
+            s = pygame.Surface((ring_radius * 2 + 20, ring_radius * 2 + 20), pygame.SRCALPHA)
+            pygame.draw.circle(s, ring_color, (ring_radius + 10, ring_radius + 10), ring_radius, ring_width)
+            self.screen.blit(s, (orb.position[0] - ring_radius - 10, orb.position[1] - ring_radius - 10))
+
+        # Selection indicator text below orb
+        indicator_y = orb.position[1] + int(base_radius) + 100
+        self.ui.draw_text_with_shadow(
+            self.screen, "◄ SELECTED ►", self.font_label,
+            orb.position, orb.color, 3, True
         )
 
     def render_sleep_mode(self):
@@ -462,47 +494,104 @@ class SpatialOSAmbient:
             print("👋 Exiting MotiBeam Spatial OS")
             self.running = False
 
-        # Launch realms
+        # Arrow key navigation
+        elif key == pygame.K_LEFT:
+            self.selected_realm = max(1, self.selected_realm - 1)
+            self.selector_visible = True
+        elif key == pygame.K_RIGHT:
+            self.selected_realm = min(9, self.selected_realm + 1)
+            self.selector_visible = True
+        elif key == pygame.K_UP:
+            self.selected_realm = max(1, self.selected_realm - 3)  # Move up a row
+            self.selector_visible = True
+        elif key == pygame.K_DOWN:
+            self.selected_realm = min(9, self.selected_realm + 3)  # Move down a row
+            self.selector_visible = True
+
+        # Launch selected realm with ENTER
+        elif key == pygame.K_RETURN or key == pygame.K_SPACE:
+            self.launch_realm(self.selected_realm)
+
+        # Launch realms directly with number keys
         elif pygame.K_1 <= key <= pygame.K_9:
             realm_num = key - pygame.K_0
+            self.selected_realm = realm_num  # Update selector
             self.launch_realm(realm_num)
 
     def launch_realm(self, realm_num: int):
         """Launch a specific realm"""
-        print(f"🚀 Launching realm {realm_num}...")
+        realm_names = {
+            1: "Home", 2: "Clinical", 3: "Education", 4: "Transport",
+            5: "Emergency", 6: "Security", 7: "Enterprise", 8: "Aviation", 9: "Maritime"
+        }
+        realm_name = realm_names.get(realm_num, f"Realm {realm_num}")
+        print(f"🚀 Launching {realm_name}...")
 
         # Special handling for Clinical realm (only one implemented)
         if realm_num == 2:
             try:
-                from realms.clinical_health import ClinicalHealthPro
+                # Import here to catch import errors
+                try:
+                    from realms.clinical_health import ClinicalHealthPro
+                except ImportError as ie:
+                    print(f"❌ Import error: {ie}")
+                    print("   Make sure pygame is installed: pip3 install pygame")
+                    self.show_temp_message(f"ERROR: pygame not installed\npip3 install pygame", 3.0)
+                    return
+
+                # Save current state before cleanup
+                saved_time = self.time
 
                 # Cleanup current display
                 pygame.quit()
 
                 # Launch Clinical realm
+                print(f"   Entering {realm_name} realm...")
                 clinical = ClinicalHealthPro()
                 result = clinical.run()
 
                 # Reinitialize homescreen when returning
+                print(f"↩️  Returned from realm {result}, reinitializing homescreen...")
+                pygame.init()
+                self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+                self.width, self.height = self.screen.get_size()
+                pygame.display.set_caption("MotiBeam Spatial OS")
+
+                # Restore fonts and state
                 self.__init__()
-                print(f"↩️  Returned from realm {result}")
+                self.time = saved_time  # Restore time to avoid jarring animation jumps
+
+                print("✅ Homescreen restored")
+
+            except KeyboardInterrupt:
+                print("\n⚠️  Realm interrupted by user")
+                # Reinitialize homescreen
+                pygame.init()
+                self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+                self.__init__()
 
             except Exception as e:
                 print(f"❌ Error launching Clinical realm: {e}")
                 import traceback
                 traceback.print_exc()
 
-                # Reinitialize homescreen
-                pygame.init()
-                self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+                # Try to recover by reinitializing homescreen
+                try:
+                    pygame.init()
+                    self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+                    self.__init__()
+                    print("✅ Homescreen recovered after error")
+                except:
+                    print("❌ Fatal error - cannot recover homescreen")
+                    self.running = False
 
         else:
             # Placeholder for other realms
-            print(f"⚠️  Realm {realm_num} not yet implemented")
+            print(f"⚠️  {realm_name} realm not yet implemented")
             print(f"   Building all 9 realms coming soon!")
 
             # Show a message on screen
-            self.show_temp_message(f"REALM {realm_num} - COMING SOON")
+            self.show_temp_message(f"{realm_name.upper()}\nCOMING SOON", 2.0)
 
     def show_temp_message(self, message: str, duration: float = 2.0):
         """Show a temporary message overlay"""
