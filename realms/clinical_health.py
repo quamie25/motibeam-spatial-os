@@ -1,23 +1,22 @@
 """
-MotiBeam Spatial OS - Clinical Mental Wellness & PTSD Support App
-⚕️ Realm #2 - Mental wellness, PTSD support, and holistic health
+MotiBeam Spatial OS - Clinical & Health Monitoring Realm
+⚕️ Realm #2 - Real-time health monitoring with IoT/cloud integration
 
-Designed for: Elderly, veterans, caregivers
-Focus: MIND first (mood, breathing, grounding), then BODY (simple reminders), then SPIRIT
+Designed for: OEM demos, healthcare providers, elderly monitoring
+Focus: VISUAL, INTERACTIVE, MINIMAL TEXT - showcase monitoring capabilities
 
 Features:
-- Mood check-in (1-10 scale)
-- Guided breathing sessions
-- Grounding techniques (5-4-3-2-1 method for PTSD)
-- "Calm Mode" with ambient breathing visuals
-- Rotating affirmations
-- Simple medication/water/sleep reminders
-- Daily encouragement messages
+- Real-time animated vital signs (Heart Rate, BP, O2, Temp)
+- ECG-style waveforms and visual indicators
+- Alert system with visual cues
+- Scrolling ticker for non-critical messages
+- Body/Mind/Spirit subcategories (B/M/S keys)
+- Minimal text - big numbers, visual status indicators
 """
 
 import random
 import math
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 from datetime import datetime
 
 # Import base realm (which already imports pygame)
@@ -25,688 +24,640 @@ from realms.base_realm import BaseRealm
 import pygame
 
 
+class VitalSign:
+    """Animated vital sign with realistic variations"""
+
+    def __init__(self, name: str, base_value: float, unit: str, min_val: float, max_val: float,
+                 variation: float, color: Tuple[int, int, int]):
+        self.name = name
+        self.base_value = base_value
+        self.current_value = base_value
+        self.unit = unit
+        self.min_val = min_val
+        self.max_val = max_val
+        self.variation = variation
+        self.color = color
+        self.history: List[float] = [base_value] * 100
+        self.alert = False
+        self.trend = 0.0
+
+    def update(self, dt: float):
+        """Update vital sign with realistic variation"""
+        # Smooth random walk
+        self.trend += (random.random() - 0.5) * 0.1
+        self.trend *= 0.95  # Decay
+
+        # Calculate new value
+        target = self.base_value + (random.random() - 0.5) * self.variation + self.trend
+        self.current_value += (target - self.current_value) * dt * 2
+
+        # Clamp to safe range
+        self.current_value = max(self.min_val, min(self.max_val, self.current_value))
+
+        # Update history
+        self.history.append(self.current_value)
+        if len(self.history) > 100:
+            self.history.pop(0)
+
+        # Check for alerts
+        safe_range = (self.max_val - self.min_val) * 0.15
+        self.alert = (self.current_value < self.min_val + safe_range or
+                     self.current_value > self.max_val - safe_range)
+
+
+class ScrollingTicker:
+    """Scrolling text ticker for non-critical messages"""
+
+    def __init__(self, messages: List[str], speed: float = 100.0):
+        self.messages = messages
+        self.current_message_index = 0
+        self.scroll_x = 0.0
+        self.speed = speed
+        self.message_spacing = 400  # Space between messages
+
+    def update(self, dt: float, width: int):
+        """Update ticker scroll position"""
+        self.scroll_x -= self.speed * dt
+
+        # Reset when message scrolls off screen
+        if self.scroll_x < -self.message_spacing:
+            self.scroll_x += self.message_spacing
+            self.current_message_index = (self.current_message_index + 1) % len(self.messages)
+
+    def get_visible_messages(self) -> List[Tuple[str, float]]:
+        """Get currently visible messages and their positions"""
+        messages = []
+        for i in range(3):  # Show up to 3 messages at once
+            idx = (self.current_message_index + i) % len(self.messages)
+            pos = self.scroll_x + (i * self.message_spacing)
+            messages.append((self.messages[idx], pos))
+        return messages
+
+
 class ClinicalHealthPro(BaseRealm):
-    """Mental Wellness & PTSD Support Realm"""
+    """Clinical & Health Monitoring Realm - Visual, Interactive, Demo-Ready"""
 
     def __init__(self):
         super().__init__(
             realm_id=2,
-            realm_name="MENTAL WELLNESS & SUPPORT",
-            realm_color=(100, 180, 255)  # Calming blue
+            realm_name="CLINICAL & HEALTH MONITORING",
+            realm_color=(80, 255, 120)
         )
 
-        # Current view mode - START with MIND (not dashboard)
-        self.view_mode = "MIND"  # MIND, BODY, SPIRIT, CALM_MODE
+        # Current view mode
+        self.view_mode = "DASHBOARD"  # DASHBOARD, BODY, MIND, SPIRIT
 
-        # MIND - Mental wellness state
-        self.mood_level = 5  # 1-10 scale, default neutral
-        self.mood_just_set = False
-        self.breathing_active = False
-        self.breathing_phase = "inhale"  # inhale, hold, exhale
-        self.breathing_timer = 0.0
-        self.breathing_duration = {"inhale": 4.0, "hold": 7.0, "exhale": 8.0}
-
-        # Affirmations - rotate through these
-        self.affirmations = [
-            "You are safe right now",
-            "This moment is all that matters",
-            "You are strong and resilient",
-            "Peace is available to you",
-            "You have survived 100% of your worst days",
-            "Progress, not perfection",
-            "You are doing your best",
-            "Breathe. You are here. You are okay.",
-            "One moment at a time",
-            "You deserve peace and calm",
-        ]
-        self.current_affirmation_index = 0
-        self.affirmation_change_timer = 0.0
-
-        # Grounding technique state (5-4-3-2-1 method)
-        self.grounding_active = False
-        self.grounding_step = 0  # 0-4 for the 5 steps
-        self.grounding_prompts = [
-            "Name 5 things you can SEE around you",
-            "Name 4 things you can TOUCH right now",
-            "Name 3 things you can HEAR at this moment",
-            "Name 2 things you can SMELL nearby",
-            "Name 1 thing you can TASTE",
+        # Initialize vital signs (animated, real-time looking)
+        self.vital_signs = [
+            VitalSign("HEART RATE", 72, "BPM", 45, 100, 8, (255, 100, 120)),
+            VitalSign("BLOOD PRESSURE", 120, "mmHg", 90, 140, 5, (100, 200, 255)),
+            VitalSign("OXYGEN", 98, "%", 88, 100, 2, (100, 255, 150)),
+            VitalSign("TEMPERATURE", 98.6, "°F", 97.0, 99.5, 0.5, (255, 200, 100)),
         ]
 
-        # BODY - Simple wellness reminders (non-medical)
-        self.water_intake = 4  # Glasses today
-        self.water_goal = 8
-        self.medication_reminders = [
-            {"time": "08:00", "name": "Morning medication", "taken": True},
-            {"time": "12:00", "name": "Afternoon medication", "taken": False},
-            {"time": "20:00", "name": "Evening medication", "taken": False},
+        # ECG simulation (for visual effect)
+        self.ecg_data: List[float] = []
+        self.ecg_timer = 0.0
+        self.heart_beat_phase = 0.0
+
+        # Health status indicators
+        self.overall_status = "HEALTHY"
+        self.wellness_score = 87
+
+        # Scrolling ticker for non-critical messages
+        ticker_messages = [
+            "💊 Medication reminder: Blood pressure medication at 12:00 PM",
+            "💧 Hydration goal: 6/8 glasses completed",
+            "🚶 Activity: 20 minutes walking completed today",
+            "😌 Stress level: LOW - Good work on relaxation exercises",
+            "🌞 Vitamin D: 10 minutes sunlight recommended",
+            "🧠 Cognitive exercise: Crossword puzzle completed",
+            "❤️ Heart health: All readings normal",
         ]
-        self.sleep_reminder = "Bedtime routine at 22:00"
-        self.activity_minutes = 15  # Simple step count
-        self.activity_goal = 30
+        self.ticker = ScrollingTicker(ticker_messages, speed=150.0)
 
-        # SPIRIT - Emotional support
-        self.daily_encouragement = [
-            "Today is a new beginning. You've got this.",
-            "Your presence matters. You make a difference.",
-            "Be gentle with yourself. Healing takes time.",
-            "You are worthy of peace and happiness.",
-            "Every small step forward is progress.",
-        ]
-        self.current_encouragement = random.choice(self.daily_encouragement)
-        self.gratitude_prompt = "What are you grateful for today?"
-        self.gratitude_items = []  # User can add mentally
+        # Body/Mind/Spirit wellness metrics (subcategories)
+        self.body_score = 85
+        self.mind_score = 78
+        self.spirit_score = 92
 
-        # Calm Mode particles
-        self.calm_particles: List[dict] = []
-        self.calm_particle_timer = 0.0
+        # Ambient particles
+        self.bio_particles: List[dict] = []
+        self.particle_timer = 0.0
 
-        # Veteran-specific support flags
-        self.ptsd_support_active = True  # Always available
-        self.hypervigilance_check_timer = 0.0
+        # Alert system
+        self.active_alerts = []
 
-        print("🧠 Mental Wellness & PTSD Support Realm initialized")
-        print("   Default view: MIND (mood check-in)")
-        print("   Press SPACE for Calm Mode | G for Grounding")
+        # Caregiver contact
+        self.caregiver_contact = "Dr. Smith"
+
+        print("🩺 Clinical & Health Monitoring Realm initialized")
+        print("   Real-time vitals monitoring active")
+        print("   IoT/cloud integration ready for demo")
 
     def update(self, dt: float):
-        """Update mental wellness system"""
+        """Update health monitoring system"""
+        # Update vital signs
+        for vital in self.vital_signs:
+            vital.update(dt)
 
-        # Update affirmation rotation (every 10 seconds)
-        self.affirmation_change_timer += dt
-        if self.affirmation_change_timer > 10.0:
-            self.affirmation_change_timer = 0.0
-            self.current_affirmation_index = (self.current_affirmation_index + 1) % len(self.affirmations)
+        # Update ECG simulation
+        self.update_ecg(dt)
 
-        # Update breathing animation in Calm Mode
-        if self.view_mode == "CALM_MODE":
-            self.update_breathing(dt)
+        # Update scrolling ticker
+        self.ticker.update(dt, self.width)
 
-            # Spawn calm particles
-            self.calm_particle_timer += dt
-            if self.calm_particle_timer > 0.05:
-                self.calm_particle_timer = 0.0
-                self.spawn_calm_particle()
+        # Update biometric particles
+        self.particle_timer += dt
+        if self.particle_timer > 0.1:
+            self.particle_timer = 0.0
+            self.spawn_bio_particle()
 
-            # Update particles
-            for particle in self.calm_particles[:]:
-                particle['y'] -= particle['vy'] * dt
-                particle['x'] += math.sin(particle['y'] * 0.01 + particle['offset']) * dt * 20
-                particle['life'] -= dt * 0.3
+        for particle in self.bio_particles[:]:
+            particle['x'] += particle['vx'] * dt
+            particle['y'] += particle['vy'] * dt
+            particle['life'] -= dt * 0.5
 
-                if particle['life'] <= 0 or particle['y'] < 0:
-                    self.calm_particles.remove(particle)
+            if particle['life'] <= 0:
+                self.bio_particles.remove(particle)
 
-    def update_breathing(self, dt: float):
-        """Update breathing exercise timer"""
-        self.breathing_timer += dt
+    def update_ecg(self, dt: float):
+        """Update ECG waveform simulation"""
+        self.ecg_timer += dt
+        self.heart_beat_phase += dt * 1.2  # Heart rate ~72 BPM
 
-        # Cycle through breathing phases
-        phase_duration = self.breathing_duration[self.breathing_phase]
+        # Generate ECG-style waveform
+        if len(self.ecg_data) > 200:
+            self.ecg_data.pop(0)
 
-        if self.breathing_timer >= phase_duration:
-            self.breathing_timer = 0.0
+        # Simplified ECG pattern (P-QRS-T wave simulation)
+        t = self.heart_beat_phase % 1.0
 
-            # Move to next phase
-            if self.breathing_phase == "inhale":
-                self.breathing_phase = "hold"
-            elif self.breathing_phase == "hold":
-                self.breathing_phase = "exhale"
-            elif self.breathing_phase == "exhale":
-                self.breathing_phase = "inhale"
+        if 0.0 <= t < 0.1:  # P wave
+            value = math.sin(t * 20 * math.pi) * 0.2
+        elif 0.15 <= t < 0.25:  # QRS complex
+            value = math.sin((t - 0.15) * 40 * math.pi) * 1.5
+        elif 0.3 <= t < 0.5:  # T wave
+            value = math.sin((t - 0.3) * 10 * math.pi) * 0.4
+        else:  # Baseline
+            value = 0.0
+
+        # Add slight noise for realism
+        value += (random.random() - 0.5) * 0.05
+        self.ecg_data.append(value)
 
     def render(self):
-        """Render mental wellness interface"""
+        """Render clinical monitoring interface"""
         # Background
         self.screen.fill(self.theme.BG_DEEP)
 
-        # Header with view mode indicator
-        self.draw_header(f"MENTAL WELLNESS - {self.view_mode}", "You are safe. You are supported.")
+        # Render ambient particles
+        self.render_bio_particles()
+
+        # Header
+        self.draw_header(f"CLINICAL MONITORING - {self.overall_status}", f"Wellness Score: {self.wellness_score}%")
 
         # Render based on current view mode
-        if self.view_mode == "MIND":
-            self.render_mind_view()
+        if self.view_mode == "DASHBOARD":
+            self.render_dashboard_view()
         elif self.view_mode == "BODY":
             self.render_body_view()
+        elif self.view_mode == "MIND":
+            self.render_mind_view()
         elif self.view_mode == "SPIRIT":
             self.render_spirit_view()
-        elif self.view_mode == "CALM_MODE":
-            self.render_calm_mode()
 
-        # Footer with navigation
-        if self.view_mode == "CALM_MODE":
-            controls = "ESC: Exit Calm Mode  │  SPACE: Return to MIND"
-        else:
-            controls = "ESC: Exit  │  M: Mind  │  B: Body  │  S: Spirit  │  SPACE: Calm Mode  │  G: Grounding  │  C: Caregiver"
+        # Scrolling ticker at bottom
+        self.render_scrolling_ticker()
+
+        # Footer with navigation (minimal)
+        controls = "ESC: Exit  │  B: Body  │  M: Mind  │  S: Spirit  │  C: Caregiver"
         self.draw_footer(controls)
 
-    def render_mind_view(self):
-        """Render MIND view - mood check-in, breathing, grounding"""
-        y_start = 280
+    def render_dashboard_view(self):
+        """Render main dashboard - VISUAL, MINIMAL TEXT"""
+        y_start = 200
 
-        # Show grounding technique if active
-        if self.grounding_active:
-            self.render_grounding_technique(y_start)
+        # Large vital signs (2x2 grid) - BIG NUMBERS, VISUAL INDICATORS
+        vital_positions = [
+            (240, y_start + 100),      # Heart Rate (top left)
+            (960, y_start + 100),      # Blood Pressure (top right)
+            (240, y_start + 400),      # Oxygen (bottom left)
+            (960, y_start + 400),      # Temperature (bottom right)
+        ]
+
+        for vital, (x, y) in zip(self.vital_signs, vital_positions):
+            self.render_vital_sign_card(vital, x, y)
+
+        # ECG waveform display (center, between vitals)
+        self.render_ecg_display(self.width // 2, y_start + 250, 800, 150)
+
+        # Body/Mind/Spirit indicators (small, top right)
+        self.render_wellness_indicators(self.width - 300, y_start - 50)
+
+    def render_vital_sign_card(self, vital: VitalSign, x: int, y: int):
+        """Render single vital sign with visual indicator - MINIMAL TEXT"""
+        card_width = 400
+        card_height = 240
+
+        # Card background
+        bg_surf = pygame.Surface((card_width, card_height), pygame.SRCALPHA)
+        bg_surf.fill((*self.theme.BG_MID, 60))
+        self.screen.blit(bg_surf, (x, y))
+
+        # Alert border if needed
+        border_color = self.theme.STATUS_ERROR if vital.alert else vital.color
+        pygame.draw.rect(self.screen, border_color, (x, y, card_width, card_height), 3)
+
+        # Vital name (small)
+        self.ui.draw_text_with_shadow(
+            self.screen, vital.name, self.font_small,
+            (x + 20, y + 20), self.theme.TEXT_DIM, 2, False
+        )
+
+        # BIG VALUE (main focus)
+        value_str = f"{int(vital.current_value)}"
+        self.ui.draw_text_with_shadow(
+            self.screen, value_str, self.font_huge,
+            (x + card_width // 2, y + 100), vital.color, 4, True
+        )
+
+        # Unit (small, next to value)
+        self.ui.draw_text_with_shadow(
+            self.screen, vital.unit, self.font_normal,
+            (x + card_width // 2 + 80, y + 100), self.theme.TEXT_DIM, 2, False
+        )
+
+        # Breathing circle indicator (visual status)
+        pulse = self.anim.breathe(self.time, 2.0)
+        circle_radius = int(15 + 8 * pulse)
+        status_color = self.theme.STATUS_ERROR if vital.alert else self.theme.STATUS_OK
+
+        self.ui.draw_breathing_circle(
+            self.screen, (x + card_width - 40, y + 40),
+            circle_radius, status_color, self.time
+        )
+
+        # Mini sparkline (history graph)
+        self.render_sparkline(vital.history, x + 20, y + 160, card_width - 40, 60, vital.color)
+
+    def render_sparkline(self, data: List[float], x: int, y: int, width: int, height: int, color: Tuple[int, int, int]):
+        """Render small sparkline graph"""
+        if len(data) < 2:
             return
 
-        # Section title
+        # Normalize data
+        min_val = min(data)
+        max_val = max(data)
+        value_range = max_val - min_val if max_val > min_val else 1.0
+
+        # Draw line graph
+        points = []
+        for i, value in enumerate(data):
+            px = x + (i / len(data)) * width
+            normalized = (value - min_val) / value_range
+            py = y + height - (normalized * height)
+            points.append((int(px), int(py)))
+
+        if len(points) > 1:
+            pygame.draw.lines(self.screen, color, False, points, 2)
+
+    def render_ecg_display(self, center_x: int, center_y: int, width: int, height: int):
+        """Render ECG-style waveform - VISUAL, NO TEXT"""
+        x = center_x - width // 2
+        y = center_y - height // 2
+
+        # Background
+        bg_surf = pygame.Surface((width, height), pygame.SRCALPHA)
+        bg_surf.fill((*self.theme.BG_MID, 40))
+        self.screen.blit(bg_surf, (x, y))
+        pygame.draw.rect(self.screen, (255, 100, 120), (x, y, width, height), 2)
+
+        # ECG label (minimal)
         self.ui.draw_text_with_shadow(
-            self.screen, "MIND - Mental Well-Being", self.font_large,
-            (self.width // 2, y_start), (100, 180, 255), 3, True
+            self.screen, "ECG", self.font_small,
+            (x + 20, y + 20), (255, 100, 120), 2, False
         )
 
-        # Rotating affirmation at top
-        affirmation_y = y_start + 80
-        current_affirmation = self.affirmations[self.current_affirmation_index]
-        self.ui.draw_text_with_shadow(
-            self.screen, f'"{current_affirmation}"', self.font_medium,
-            (self.width // 2, affirmation_y), self.realm_color, 3, True
-        )
+        # Draw ECG waveform
+        if len(self.ecg_data) > 1:
+            points = []
+            for i, value in enumerate(self.ecg_data):
+                px = x + 20 + (i / len(self.ecg_data)) * (width - 40)
+                py = center_y - (value * 50)  # Scale for visibility
+                points.append((int(px), int(py)))
 
-        # Mood check-in (large, prominent)
-        mood_y = affirmation_y + 120
-        self.ui.draw_text_with_shadow(
-            self.screen, "How are you feeling today?", self.font_medium,
-            (self.width // 2, mood_y), self.theme.TEXT_BRIGHT, 2, True
-        )
+            # Draw waveform with glow effect
+            for offset in range(3, 0, -1):
+                alpha = 80 // offset
+                glow_color = (*self.vital_signs[0].color, alpha)
+                if offset == 1:
+                    pygame.draw.lines(self.screen, self.vital_signs[0].color, False, points, 3)
+                else:
+                    # Glow effect (simplified)
+                    pass
 
-        # Mood scale (1-10) with visual slider
-        self.render_mood_scale(self.width // 2, mood_y + 80)
+            pygame.draw.lines(self.screen, self.vital_signs[0].color, False, points, 2)
 
-        # Quick actions (left side)
-        actions_x = 120
-        actions_y = mood_y + 280
-
-        self.ui.draw_text_with_shadow(
-            self.screen, "QUICK CALMING TOOLS", self.font_normal,
-            (actions_x, actions_y), (100, 200, 255), 2, False
-        )
-
-        actions = [
-            "[SPACE] Calm Mode - Guided breathing with visuals",
-            "[G] Grounding - 5-4-3-2-1 technique for anxiety",
-            "[C] Contact Caregiver - Get support now",
+    def render_wellness_indicators(self, x: int, y: int):
+        """Render Body/Mind/Spirit indicators - SMALL, VISUAL"""
+        indicators = [
+            ("B", "BODY", self.body_score, (100, 200, 255)),
+            ("M", "MIND", self.mind_score, (200, 100, 255)),
+            ("S", "SPIRIT", self.spirit_score, (255, 150, 100)),
         ]
-        for i, action in enumerate(actions):
+
+        for i, (key, name, score, color) in enumerate(indicators):
+            ind_y = y + i * 60
+
+            # Key indicator
             self.ui.draw_text_with_shadow(
-                self.screen, action, self.font_small,
-                (actions_x + 20, actions_y + 60 + i * 50), self.theme.TEXT_NORMAL, 2, False
+                self.screen, f"[{key}]", self.font_small,
+                (x, ind_y), color, 2, False
             )
 
-        # Anxiety reduction tips (right side)
-        tips_x = self.width // 2 + 100
-        tips_y = actions_y
+            # Score bar (visual)
+            bar_x = x + 60
+            bar_width = 150
+            bar_height = 20
 
-        self.ui.draw_text_with_shadow(
-            self.screen, "WHEN YOU FEEL ANXIOUS", self.font_normal,
-            (tips_x, tips_y), (255, 150, 100), 2, False
-        )
+            # Background bar
+            pygame.draw.rect(self.screen, self.theme.BG_MID, (bar_x, ind_y - 10, bar_width, bar_height))
 
-        tips = [
-            "• Focus on your breath - slow and steady",
-            "• Ground yourself - feel your feet on floor",
-            "• Name what you see, hear, feel around you",
-            "• Remind yourself: This feeling will pass",
-        ]
-        for i, tip in enumerate(tips):
+            # Filled bar (score percentage)
+            fill_width = int((score / 100) * bar_width)
+            pygame.draw.rect(self.screen, color, (bar_x, ind_y - 10, fill_width, bar_height))
+
+            # Border
+            pygame.draw.rect(self.screen, color, (bar_x, ind_y - 10, bar_width, bar_height), 2)
+
+            # Score number
             self.ui.draw_text_with_shadow(
-                self.screen, tip, self.font_small,
-                (tips_x + 20, tips_y + 60 + i * 50), self.theme.TEXT_NORMAL, 2, False
+                self.screen, f"{score}", self.font_small,
+                (bar_x + bar_width + 30, ind_y), color, 2, False
             )
-
-    def render_mood_scale(self, center_x: int, y: int):
-        """Render interactive mood scale (1-10)"""
-        scale_width = 800
-        scale_height = 60
-        start_x = center_x - scale_width // 2
-
-        # Draw scale background
-        scale_rect = pygame.Rect(start_x, y, scale_width, scale_height)
-        bg_surf = pygame.Surface((scale_width, scale_height), pygame.SRCALPHA)
-        bg_surf.fill((*self.theme.BG_MID, 80))
-        self.screen.blit(bg_surf, (start_x, y))
-        pygame.draw.rect(self.screen, self.realm_color, scale_rect, 2)
-
-        # Draw scale markers (1-10)
-        for i in range(1, 11):
-            marker_x = start_x + (i - 0.5) * (scale_width / 10)
-            marker_y = y + scale_height // 2
-
-            # Number
-            num_color = self.theme.TEXT_BRIGHT if i == self.mood_level else self.theme.TEXT_DIM
-            self.ui.draw_text_with_shadow(
-                self.screen, str(i), self.font_normal,
-                (int(marker_x), int(marker_y)), num_color, 2, True
-            )
-
-        # Draw current mood indicator (breathing circle)
-        indicator_x = start_x + (self.mood_level - 0.5) * (scale_width / 10)
-        indicator_y = y + scale_height + 50
-        pulse = self.anim.breathe(self.time, 2.0)
-        indicator_radius = int(20 + 10 * pulse)
-
-        # Mood color gradient (red -> yellow -> green)
-        if self.mood_level <= 3:
-            mood_color = (255, 100, 100)  # Red (low mood)
-        elif self.mood_level <= 7:
-            mood_color = (255, 200, 100)  # Yellow (neutral)
-        else:
-            mood_color = (100, 255, 150)  # Green (good mood)
-
-        self.ui.draw_breathing_circle(self.screen, (int(indicator_x), indicator_y), indicator_radius, mood_color, self.time)
-
-        # Mood labels
-        label_y = y + scale_height + 120
-        self.ui.draw_text_with_shadow(
-            self.screen, "Struggling", self.font_small,
-            (start_x + 80, label_y), (255, 100, 100), 2, True
-        )
-        self.ui.draw_text_with_shadow(
-            self.screen, "Neutral", self.font_small,
-            (center_x, label_y), (255, 200, 100), 2, True
-        )
-        self.ui.draw_text_with_shadow(
-            self.screen, "Feeling Good", self.font_small,
-            (start_x + scale_width - 80, label_y), (100, 255, 150), 2, True
-        )
-
-        # Instruction
-        self.ui.draw_text_with_shadow(
-            self.screen, "Use LEFT/RIGHT arrows to adjust your mood", self.font_small,
-            (center_x, y - 40), self.theme.TEXT_DIM, 2, True
-        )
-
-    def render_grounding_technique(self, y_start: int):
-        """Render 5-4-3-2-1 grounding technique for PTSD/anxiety"""
-        # Title
-        self.ui.draw_text_with_shadow(
-            self.screen, "GROUNDING TECHNIQUE - 5-4-3-2-1 Method", self.font_large,
-            (self.width // 2, y_start + 40), (100, 255, 150), 3, True
-        )
-
-        # Instruction
-        self.ui.draw_text_with_shadow(
-            self.screen, "Take your time. Breathe slowly. Focus on the present moment.", self.font_normal,
-            (self.width // 2, y_start + 120), self.theme.TEXT_DIM, 2, True
-        )
-
-        # Show all 5 steps, highlight current one
-        steps_y = y_start + 220
-        for i, prompt in enumerate(self.grounding_prompts):
-            step_y = steps_y + i * 100
-
-            # Step number and prompt
-            step_num = 5 - i
-            is_current = (i == self.grounding_step)
-
-            if is_current:
-                # Highlight current step with breathing glow
-                pulse = self.anim.breathe(self.time, 2.0)
-                glow_alpha = int(80 * pulse)
-
-                # Glow background
-                glow_rect = pygame.Rect(200, step_y - 30, self.width - 400, 80)
-                glow_surf = pygame.Surface((self.width - 400, 80), pygame.SRCALPHA)
-                glow_surf.fill((*self.realm_color, glow_alpha))
-                self.screen.blit(glow_surf, (200, step_y - 30))
-                pygame.draw.rect(self.screen, self.realm_color, glow_rect, 3)
-
-                text_color = self.theme.TEXT_BRIGHT
-                font = self.font_medium
-            else:
-                text_color = self.theme.TEXT_DIM
-                font = self.font_normal
-
-            # Render step
-            step_text = f"{step_num}. {prompt}"
-            self.ui.draw_text_with_shadow(
-                self.screen, step_text, font,
-                (self.width // 2, step_y), text_color, 2, True
-            )
-
-        # Navigation
-        nav_y = steps_y + 550
-        self.ui.draw_text_with_shadow(
-            self.screen, "Press UP/DOWN to navigate  │  ESC to exit grounding", self.font_normal,
-            (self.width // 2, nav_y), self.theme.TEXT_DIM, 2, True
-        )
 
     def render_body_view(self):
-        """Render BODY view - simple reminders (non-medical)"""
+        """Render BODY subcategory - VISUAL, MINIMAL TEXT"""
         y_start = 280
 
-        # Section title
+        # Title
         self.ui.draw_text_with_shadow(
-            self.screen, "BODY - Simple Wellness Reminders", self.font_large,
-            (self.width // 2, y_start), (100, 255, 150), 3, True
+            self.screen, "BODY WELLNESS", self.font_large,
+            (self.width // 2, y_start), (100, 200, 255), 3, True
         )
 
-        # Water intake (left side)
-        water_x = 150
-        water_y = y_start + 120
+        # Visual activity tracker
+        self.render_activity_circle(300, y_start + 150, 120)
 
+        # Visual water intake
+        self.render_water_tracker(900, y_start + 150)
+
+        # Visual sleep quality
+        self.render_sleep_quality(self.width // 2, y_start + 450)
+
+    def render_mind_view(self):
+        """Render MIND subcategory - VISUAL, MINIMAL TEXT"""
+        y_start = 280
+
+        # Title
         self.ui.draw_text_with_shadow(
-            self.screen, "WATER INTAKE", self.font_medium,
-            (water_x, water_y), (100, 200, 255), 2, False
+            self.screen, "MIND WELLNESS", self.font_large,
+            (self.width // 2, y_start), (200, 100, 255), 3, True
         )
 
-        # Visual water tracker
-        water_text = f"{self.water_intake} / {self.water_goal} glasses today"
+        # Visual stress meter
+        self.render_stress_meter(self.width // 2, y_start + 200)
+
+        # Breathing exercise indicator
+        self.render_breathing_indicator(self.width // 2, y_start + 450)
+
+    def render_spirit_view(self):
+        """Render SPIRIT subcategory - VISUAL, MINIMAL TEXT"""
+        y_start = 280
+
+        # Title
         self.ui.draw_text_with_shadow(
-            self.screen, water_text, self.font_large,
-            (water_x, water_y + 70), (100, 200, 255), 3, False
+            self.screen, "SPIRIT WELLNESS", self.font_large,
+            (self.width // 2, y_start), (255, 150, 100), 3, True
         )
 
-        # Water glasses visualization
-        glasses_y = water_y + 150
-        for i in range(self.water_goal):
-            glass_x = water_x + i * 60
-            filled = i < self.water_intake
+        # Visual connection meter
+        self.render_connection_meter(self.width // 2, y_start + 200)
+
+        # Purpose indicator
+        self.render_purpose_indicator(self.width // 2, y_start + 450)
+
+    def render_activity_circle(self, x: int, y: int, radius: int):
+        """Visual activity tracker - circular progress"""
+        # Title
+        self.ui.draw_text_with_shadow(
+            self.screen, "ACTIVITY", self.font_medium,
+            (x, y - radius - 40), (100, 200, 255), 2, True
+        )
+
+        # Progress circle (20/30 minutes)
+        progress = 20 / 30  # Demo value
+        self.render_progress_circle(x, y, radius, progress, (100, 200, 255))
+
+        # Center text
+        self.ui.draw_text_with_shadow(
+            self.screen, "20", self.font_huge,
+            (x, y), (100, 200, 255), 4, True
+        )
+        self.ui.draw_text_with_shadow(
+            self.screen, "min", self.font_small,
+            (x, y + 50), self.theme.TEXT_DIM, 2, True
+        )
+
+    def render_water_tracker(self, x: int, y: int):
+        """Visual water intake tracker"""
+        # Title
+        self.ui.draw_text_with_shadow(
+            self.screen, "HYDRATION", self.font_medium,
+            (x, y - 60), (100, 200, 255), 2, True
+        )
+
+        # Visual glasses (6/8)
+        glasses_completed = 6
+        glasses_goal = 8
+
+        for i in range(glasses_goal):
+            glass_x = x - 200 + (i * 50)
+            glass_y = y
+            filled = i < glasses_completed
+
             color = (100, 200, 255) if filled else self.theme.TEXT_DIM
+            glass_rect = pygame.Rect(glass_x, glass_y, 35, 50)
 
-            # Simple rectangle for glass
-            glass_rect = pygame.Rect(glass_x, glasses_y, 40, 60)
             if filled:
                 pygame.draw.rect(self.screen, color, glass_rect)
             else:
                 pygame.draw.rect(self.screen, color, glass_rect, 2)
 
-        # Medication reminders (left side, below water)
-        med_y = glasses_y + 120
+    def render_sleep_quality(self, x: int, y: int):
+        """Visual sleep quality indicator"""
+        # Title
         self.ui.draw_text_with_shadow(
-            self.screen, "MEDICATION REMINDERS", self.font_medium,
-            (water_x, med_y), (255, 200, 100), 2, False
+            self.screen, "SLEEP", self.font_medium,
+            (x, y - 40), (200, 150, 255), 2, True
         )
 
-        for i, med in enumerate(self.medication_reminders):
-            med_text_y = med_y + 60 + i * 50
-            status = "[✓]" if med["taken"] else "[ ]"
-            color = self.theme.TEXT_DIM if med["taken"] else (255, 200, 100)
-
-            med_text = f"{status} {med['time']} - {med['name']}"
-            self.ui.draw_text_with_shadow(
-                self.screen, med_text, self.font_small,
-                (water_x + 20, med_text_y), color, 2, False
-            )
-
-        # Light activity reminder (right side)
-        activity_x = self.width // 2 + 100
-        activity_y = y_start + 120
-
+        # Sleep hours bar
+        sleep_hours = 7.5
         self.ui.draw_text_with_shadow(
-            self.screen, "LIGHT ACTIVITY", self.font_medium,
-            (activity_x, activity_y), (150, 255, 150), 2, False
+            self.screen, f"{sleep_hours} hrs", self.font_large,
+            (x, y + 30), (200, 150, 255), 3, True
         )
 
-        activity_text = f"{self.activity_minutes} / {self.activity_goal} minutes today"
+    def render_stress_meter(self, x: int, y: int):
+        """Visual stress level meter"""
+        stress_level = 3  # 1-10 scale
+
+        # Meter (visual bar)
+        bar_width = 600
+        bar_height = 60
+        bar_x = x - bar_width // 2
+
+        # Background
+        pygame.draw.rect(self.screen, self.theme.BG_MID, (bar_x, y, bar_width, bar_height))
+
+        # Fill based on stress
+        fill_width = int((stress_level / 10) * bar_width)
+        stress_color = (100, 255, 100) if stress_level < 4 else (255, 200, 100) if stress_level < 7 else (255, 100, 100)
+        pygame.draw.rect(self.screen, stress_color, (bar_x, y, fill_width, bar_height))
+
+        # Border
+        pygame.draw.rect(self.screen, stress_color, (bar_x, y, bar_width, bar_height), 3)
+
+        # Value
         self.ui.draw_text_with_shadow(
-            self.screen, activity_text, self.font_normal,
-            (activity_x, activity_y + 70), self.theme.TEXT_NORMAL, 2, False
+            self.screen, f"STRESS: {stress_level}/10", self.font_large,
+            (x, y - 60), stress_color, 3, True
         )
 
-        activity_tips = [
-            "• Short walk around the house",
-            "• Gentle stretching in chair",
-            "• Stand up every hour",
-            "• Light mobility exercises",
-        ]
-        for i, tip in enumerate(activity_tips):
-            self.ui.draw_text_with_shadow(
-                self.screen, tip, self.font_small,
-                (activity_x, activity_y + 140 + i * 50), self.theme.TEXT_NORMAL, 2, False
-            )
-
-        # Sleep hygiene (right side, below activity)
-        sleep_y = activity_y + 380
-        self.ui.draw_text_with_shadow(
-            self.screen, "SLEEP HYGIENE", self.font_medium,
-            (activity_x, sleep_y), (200, 150, 255), 2, False
-        )
-
-        self.ui.draw_text_with_shadow(
-            self.screen, self.sleep_reminder, self.font_normal,
-            (activity_x, sleep_y + 70), (200, 150, 255), 2, False
-        )
-
-        sleep_tips = [
-            "• Dim lights 1 hour before bed",
-            "• No screens 30 min before sleep",
-            "• Keep bedroom cool and dark",
-        ]
-        for i, tip in enumerate(sleep_tips):
-            self.ui.draw_text_with_shadow(
-                self.screen, tip, self.font_small,
-                (activity_x, sleep_y + 130 + i * 50), self.theme.TEXT_NORMAL, 2, False
-            )
-
-    def render_spirit_view(self):
-        """Render SPIRIT view - encouragement, gratitude, reflection"""
-        y_start = 280
-
-        # Section title
-        self.ui.draw_text_with_shadow(
-            self.screen, "SPIRIT - Encouragement & Peace", self.font_large,
-            (self.width // 2, y_start), (255, 200, 150), 3, True
-        )
-
-        # Daily encouragement (large, centered)
-        encourage_y = y_start + 120
+    def render_breathing_indicator(self, x: int, y: int):
+        """Visual breathing exercise indicator"""
         pulse = self.anim.breathe(self.time, 3.0)
-        glow_alpha = int(100 * pulse)
+        radius = int(80 + 40 * pulse)
 
-        # Glow box around encouragement
-        encourage_rect = pygame.Rect(200, encourage_y - 40, self.width - 400, 140)
-        glow_surf = pygame.Surface((self.width - 400, 140), pygame.SRCALPHA)
-        glow_surf.fill((255, 200, 150, glow_alpha))
-        self.screen.blit(glow_surf, (200, encourage_y - 40))
-        pygame.draw.rect(self.screen, (255, 200, 150), encourage_rect, 3)
+        self.ui.draw_breathing_circle(self.screen, (x, y), radius, (200, 100, 255), self.time)
 
         self.ui.draw_text_with_shadow(
-            self.screen, self.current_encouragement, self.font_large,
-            (self.width // 2, encourage_y + 30), (255, 200, 150), 3, True
+            self.screen, "BREATHE", self.font_medium,
+            (x, y + 150), (200, 100, 255), 2, True
         )
 
-        # Gratitude prompt
-        gratitude_y = encourage_y + 240
+    def render_connection_meter(self, x: int, y: int):
+        """Visual social connection meter"""
+        connection_score = 92
+
+        # Circular progress
+        radius = 100
+        self.render_progress_circle(x, y, radius, connection_score / 100, (255, 150, 100))
+
+        # Center value
         self.ui.draw_text_with_shadow(
-            self.screen, "GRATITUDE PRACTICE", self.font_medium,
-            (self.width // 2, gratitude_y), (150, 255, 200), 2, True
+            self.screen, f"{connection_score}", self.font_huge,
+            (x, y), (255, 150, 100), 4, True
         )
 
+    def render_purpose_indicator(self, x: int, y: int):
+        """Visual purpose/gratitude indicator"""
         self.ui.draw_text_with_shadow(
-            self.screen, self.gratitude_prompt, self.font_normal,
-            (self.width // 2, gratitude_y + 70), self.theme.TEXT_NORMAL, 2, True
-        )
-
-        # Example gratitude items
-        gratitude_examples = [
-            "• A warm home",
-            "• People who care about you",
-            "• This moment of peace",
-        ]
-        gratitude_list_y = gratitude_y + 150
-        for i, example in enumerate(gratitude_examples):
-            self.ui.draw_text_with_shadow(
-                self.screen, example, self.font_small,
-                (self.width // 2, gratitude_list_y + i * 50), self.theme.TEXT_DIM, 2, True
-            )
-
-        # Quiet reflection prompt
-        reflection_y = gratitude_list_y + 200
-        self.ui.draw_text_with_shadow(
-            self.screen, "QUIET REFLECTION", self.font_medium,
-            (self.width // 2, reflection_y), (200, 180, 255), 2, True
+            self.screen, "GRATITUDE STREAK", self.font_medium,
+            (x, y - 40), (255, 200, 150), 2, True
         )
 
         self.ui.draw_text_with_shadow(
-            self.screen, "Take a moment to simply be present.", self.font_normal,
-            (self.width // 2, reflection_y + 70), self.theme.TEXT_DIM, 2, True
+            self.screen, "18 days", self.font_huge,
+            (x, y + 30), (255, 200, 150), 4, True
         )
 
-        self.ui.draw_text_with_shadow(
-            self.screen, "No need to do anything. Just breathe and exist.", self.font_small,
-            (self.width // 2, reflection_y + 120), self.theme.TEXT_DIM, 2, True
-        )
+    def render_progress_circle(self, x: int, y: int, radius: int, progress: float, color: Tuple[int, int, int]):
+        """Render circular progress indicator"""
+        # Background circle
+        pygame.draw.circle(self.screen, self.theme.BG_MID, (x, y), radius, 8)
 
-    def render_calm_mode(self):
-        """Render Calm Mode - immersive breathing exercise with ambient visuals"""
-        # Dark, calming background
-        self.screen.fill((5, 10, 20))
+        # Progress arc
+        if progress > 0:
+            start_angle = -math.pi / 2
+            end_angle = start_angle + (2 * math.pi * progress)
 
-        # Render floating particles
-        for particle in self.calm_particles:
+            # Draw arc segments
+            segments = int(progress * 60)
+            for i in range(segments):
+                angle = start_angle + (i / 60) * 2 * math.pi
+                next_angle = start_angle + ((i + 1) / 60) * 2 * math.pi
+
+                start_pos = (x + int(radius * math.cos(angle)), y + int(radius * math.sin(angle)))
+                end_pos = (x + int(radius * math.cos(next_angle)), y + int(radius * math.sin(next_angle)))
+
+                pygame.draw.line(self.screen, color, start_pos, end_pos, 8)
+
+    def render_scrolling_ticker(self):
+        """Render scrolling ticker at bottom - NON-CRITICAL INFO"""
+        ticker_y = self.height - 120
+        ticker_height = 50
+
+        # Background
+        bg_surf = pygame.Surface((self.width, ticker_height), pygame.SRCALPHA)
+        bg_surf.fill((*self.theme.BG_MID, 100))
+        self.screen.blit(bg_surf, (0, ticker_y))
+
+        # Render scrolling messages
+        for message, pos_x in self.ticker.get_visible_messages():
+            if 0 <= pos_x < self.width:
+                self.ui.draw_text_with_shadow(
+                    self.screen, message, self.font_small,
+                    (int(pos_x), ticker_y + 25), self.theme.TEXT_NORMAL, 2, False
+                )
+
+    def render_bio_particles(self):
+        """Render ambient biometric particles"""
+        for particle in self.bio_particles:
             if particle['life'] > 0:
-                alpha = int(particle['life'] * 120)
-                color = (*particle['color'], alpha)
-                size = int(particle['size'])
-
+                alpha = int(particle['life'] * 60)
+                color = (*self.realm_color, alpha)
+                size = int(particle['size'] * (particle['life'] + 0.5))
                 s = pygame.Surface((size * 2, size * 2), pygame.SRCALPHA)
                 pygame.draw.circle(s, color, (size, size), size)
                 self.screen.blit(s, (int(particle['x']) - size, int(particle['y']) - size))
 
-        # Central breathing orb
-        center_x = self.width // 2
-        center_y = self.height // 2 - 100
-
-        # Calculate breathing animation
-        phase_duration = self.breathing_duration[self.breathing_phase]
-        progress = self.breathing_timer / phase_duration
-
-        # Orb size based on breathing phase
-        if self.breathing_phase == "inhale":
-            base_radius = 80
-            max_radius = 180
-            radius = int(base_radius + (max_radius - base_radius) * progress)
-        elif self.breathing_phase == "hold":
-            radius = 180  # Stay large
-        elif self.breathing_phase == "exhale":
-            base_radius = 80
-            max_radius = 180
-            radius = int(max_radius - (max_radius - base_radius) * progress)
-
-        # Draw breathing orb with glow
-        self.ui.draw_breathing_circle(
-            self.screen, (center_x, center_y), radius,
-            (100, 180, 255), self.time
-        )
-
-        # Breathing instruction text
-        instruction_y = center_y + 250
-
-        if self.breathing_phase == "inhale":
-            instruction = "Breathe in slowly..."
-            count_text = f"{int(self.breathing_timer + 1)} / {int(self.breathing_duration['inhale'])}"
-        elif self.breathing_phase == "hold":
-            instruction = "Hold your breath..."
-            count_text = f"{int(self.breathing_timer + 1)} / {int(self.breathing_duration['hold'])}"
-        elif self.breathing_phase == "exhale":
-            instruction = "Breathe out slowly..."
-            count_text = f"{int(self.breathing_timer + 1)} / {int(self.breathing_duration['exhale'])}"
-
-        self.ui.draw_text_with_shadow(
-            self.screen, instruction, self.font_huge,
-            (center_x, instruction_y), (150, 200, 255), 4, True
-        )
-
-        self.ui.draw_text_with_shadow(
-            self.screen, count_text, self.font_large,
-            (center_x, instruction_y + 100), self.theme.TEXT_DIM, 3, True
-        )
-
-        # Calming message at top
-        self.ui.draw_text_with_shadow(
-            self.screen, "You are safe. Focus on your breath.", self.font_medium,
-            (center_x, 150), self.theme.TEXT_DIM, 2, True
-        )
-
-        # Current affirmation at bottom
-        affirmation = self.affirmations[self.current_affirmation_index]
-        self.ui.draw_text_with_shadow(
-            self.screen, f'"{affirmation}"', self.font_normal,
-            (center_x, self.height - 180), (150, 200, 255), 2, True
-        )
-
-    def spawn_calm_particle(self):
-        """Spawn ambient particle for Calm Mode"""
-        self.calm_particles.append({
+    def spawn_bio_particle(self):
+        """Spawn ambient biometric particle"""
+        self.bio_particles.append({
             'x': random.randint(0, self.width),
-            'y': self.height,
-            'vy': random.uniform(30, 80),
-            'life': random.uniform(0.8, 1.2),
-            'size': random.randint(3, 8),
-            'offset': random.uniform(0, math.pi * 2),
-            'color': random.choice([
-                (100, 180, 255),  # Blue
-                (150, 200, 255),  # Light blue
-                (100, 200, 200),  # Cyan
-            ])
+            'y': random.randint(200, self.height - 200),
+            'vx': random.uniform(-20, 20),
+            'vy': random.uniform(-20, 20),
+            'life': 1.0,
+            'size': random.randint(2, 6),
         })
 
     def handle_key(self, key: int):
         """Handle realm-specific controls"""
-        # View mode navigation
-        if key == pygame.K_m:
-            self.view_mode = "MIND"
-            self.grounding_active = False
-            print("   Switching to MIND view")
-        elif key == pygame.K_b:
+        if key == pygame.K_b:
             self.view_mode = "BODY"
-            self.grounding_active = False
             print("   Switching to BODY view")
+        elif key == pygame.K_m:
+            self.view_mode = "MIND"
+            print("   Switching to MIND view")
         elif key == pygame.K_s:
             self.view_mode = "SPIRIT"
-            self.grounding_active = False
             print("   Switching to SPIRIT view")
-
-        # Calm Mode toggle
-        elif key == pygame.K_SPACE:
-            if self.view_mode == "CALM_MODE":
-                self.view_mode = "MIND"
-                print("   Exiting Calm Mode")
-            else:
-                self.view_mode = "CALM_MODE"
-                self.breathing_phase = "inhale"
-                self.breathing_timer = 0.0
-                self.calm_particles = []
-                print("   Entering Calm Mode - Guided breathing")
-
-        # Grounding technique toggle
-        elif key == pygame.K_g:
-            if self.view_mode == "MIND":
-                self.grounding_active = not self.grounding_active
-                if self.grounding_active:
-                    self.grounding_step = 0
-                    print("   Starting 5-4-3-2-1 Grounding Technique")
-                else:
-                    print("   Exiting Grounding Technique")
-
-        # Grounding navigation
-        elif key == pygame.K_UP:
-            if self.grounding_active and self.grounding_step > 0:
-                self.grounding_step -= 1
-        elif key == pygame.K_DOWN:
-            if self.grounding_active and self.grounding_step < 4:
-                self.grounding_step += 1
-
-        # Mood adjustment
-        elif key == pygame.K_LEFT:
-            if self.view_mode == "MIND" and not self.grounding_active:
-                self.mood_level = max(1, self.mood_level - 1)
-                print(f"   Mood level: {self.mood_level}/10")
-        elif key == pygame.K_RIGHT:
-            if self.view_mode == "MIND" and not self.grounding_active:
-                self.mood_level = min(10, self.mood_level + 1)
-                print(f"   Mood level: {self.mood_level}/10")
-
-        # Caregiver notification
+        elif key == pygame.K_d:
+            self.view_mode = "DASHBOARD"
+            print("   Switching to DASHBOARD view")
         elif key == pygame.K_c:
+            # Caregiver notification
             print("   🔔 CAREGIVER NOTIFICATION SENT")
-            print("      Message: User requested support")
-            # In production: would send real notification
+            print(f"      Contacting: {self.caregiver_contact}")
+            print("      Message: User requested assistance")
 
 
 def main():
-    """Run Mental Wellness & PTSD Support Realm standalone"""
+    """Run Clinical & Health Monitoring Realm standalone"""
     realm = ClinicalHealthPro()
     realm.run()
 
