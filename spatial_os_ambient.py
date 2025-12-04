@@ -68,10 +68,10 @@ class RealmOrb:
         pulse = math.sin(time * 2 + self.phase_offset) * 0.15 + 1.0
         radius = int(self.base_radius * pulse * self.hover_scale)
 
-        # Glow layers
-        for i in range(6):
-            glow_radius = radius + (i * 15)
-            glow_alpha = max(0, 80 - i * 13)
+        # Glow layers (REDUCED intensity to not cover content)
+        for i in range(3):  # Reduced from 6 to 3
+            glow_radius = radius + (i * 8)  # Reduced spread
+            glow_alpha = max(0, 40 - i * 10)  # Reduced from 80
             glow_color = (*self.color, glow_alpha)
             s = pygame.Surface((glow_radius * 2, glow_radius * 2), pygame.SRCALPHA)
             pygame.draw.circle(s, glow_color, (glow_radius, glow_radius), glow_radius)
@@ -80,17 +80,17 @@ class RealmOrb:
         # Main orb
         pygame.draw.circle(surface, self.color, self.position, radius)
 
-        # Inner glow
-        inner_radius = int(radius * 0.7)
-        inner_glow = (*self.color, 100)
+        # Inner glow (REDUCED to not cover number)
+        inner_radius = int(radius * 0.5)  # Reduced from 0.7
+        inner_glow = (*self.color, 40)  # Reduced from 100
         s = pygame.Surface((inner_radius * 2, inner_radius * 2), pygame.SRCALPHA)
         pygame.draw.circle(s, inner_glow, (inner_radius, inner_radius), inner_radius)
         surface.blit(s, (self.position[0] - inner_radius, self.position[1] - inner_radius))
 
-        # Draw realm symbol as large text (not emoji, actual symbol characters)
-        symbol_surf = font_emoji.render(self.emoji, True, (255, 255, 255))
-        symbol_rect = symbol_surf.get_rect(center=self.position)
-        surface.blit(symbol_surf, symbol_rect)
+        # Draw realm NUMBER prominently (symbols don't render on all systems)
+        num_surf = font_emoji.render(str(self.realm_id), True, (255, 255, 255))
+        num_rect = num_surf.get_rect(center=self.position)
+        surface.blit(num_surf, num_rect)
 
         # Realm name below orb - larger and more visible
         label_y = self.position[1] + int(radius) + 50
@@ -192,15 +192,15 @@ class SpatialOSAmbient:
     def init_realm_orbs(self):
         """Initialize 9 realm orbs in a 3x3 grid with proper spacing"""
         realm_data = [
-            (1, "◉", "HOME & LIVING", self.theme.REALM_COLORS[1]),           # 🏡 Home
-            (2, "+", "CLINICAL & HEALTH", self.theme.REALM_COLORS[2]),        # ⚕️ Health
-            (3, "◆", "EDUCATION", self.theme.REALM_COLORS[3]),                # 📚 Learning
-            (4, "▣", "TRANSPORT", self.theme.REALM_COLORS[4]),                # 🚗 Vehicle
-            (5, "⚠", "EMERGENCY", self.theme.REALM_COLORS[5]),                # 🚨 Alert
-            (6, "◈", "SECURITY", self.theme.REALM_COLORS[6]),                 # 🛡️ Shield
-            (7, "■", "ENTERPRISE", self.theme.REALM_COLORS[7]),               # 🏢 Business
-            (8, "✈", "AVIATION", self.theme.REALM_COLORS[8]),                 # ✈️ Flight
-            (9, "⚓", "MARITIME", self.theme.REALM_COLORS[9]),                 # ⚓ Anchor
+            (1, "1", "HOME", self.theme.REALM_COLORS[1]),
+            (2, "2", "HEALTH", self.theme.REALM_COLORS[2]),
+            (3, "3", "EDUCATION", self.theme.REALM_COLORS[3]),
+            (4, "4", "TRANSPORT", self.theme.REALM_COLORS[4]),
+            (5, "5", "EMERGENCY", self.theme.REALM_COLORS[5]),
+            (6, "6", "SECURITY", self.theme.REALM_COLORS[6]),
+            (7, "7", "ENTERPRISE", self.theme.REALM_COLORS[7]),
+            (8, "8", "AVIATION", self.theme.REALM_COLORS[8]),
+            (9, "9", "MARITIME", self.theme.REALM_COLORS[9]),
         ]
 
         # Calculate grid layout (3x3) with more spacing to prevent overlap

@@ -752,7 +752,10 @@ class ClinicalHealthPro(BaseRealm):
             print("   Switching to DASHBOARD view")
         elif key == pygame.K_c:
             # Notify caregiver
+            print("   🔔 CAREGIVER BUTTON PRESSED!")
             self.notify_caregiver("Wellness check requested by user")
+            # Flash notification on screen briefly
+            print(f"   ✓ Notification sent to {self.caregiver_contact}")
 
 
 def main():
