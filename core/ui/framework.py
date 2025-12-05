@@ -10,52 +10,52 @@ from typing import Tuple, List, Optional
 from datetime import datetime
 
 
-# SOFT AMBIENT THEME (NO NEON)
+# ULTRA-SOFT AMBIENT THEME (PROJECTION OPTIMIZED)
 class Theme:
     """Projection-friendly color palette - soft, readable from 10-15ft"""
 
-    # Background
-    BG_DEEP = (8, 12, 18)
-    BG_DARK = (15, 20, 28)
-    BG_MID = (25, 35, 45)
+    # Background (darker for better contrast)
+    BG_DEEP = (5, 8, 12)
+    BG_DARK = (10, 15, 20)
+    BG_MID = (20, 28, 35)
 
-    # Soft whites and grays
-    WHITE = (245, 245, 250)
-    GRAY_LIGHT = (180, 185, 195)
-    GRAY_MID = (120, 125, 135)
-    GRAY_DARK = (60, 65, 75)
+    # Soft whites and grays (less bright)
+    WHITE = (220, 225, 230)          # Softer white
+    GRAY_LIGHT = (160, 165, 175)     # Dimmer light gray
+    GRAY_MID = (100, 105, 115)       # Softer mid gray
+    GRAY_DARK = (50, 55, 65)         # Darker gray
 
-    # Soft accent colors (muted, NOT neon)
-    BLUE_SOFT = (100, 140, 200)
-    BLUE_GLOW = (120, 160, 220)
-    GREEN_SOFT = (100, 180, 140)
-    AMBER_SOFT = (220, 180, 100)
-    RED_SOFT = (200, 100, 100)
-    PURPLE_SOFT = (160, 120, 180)
-    CYAN_SOFT = (100, 180, 200)
+    # Ultra-soft accent colors (VERY muted, cinematic)
+    BLUE_SOFT = (80, 110, 150)       # More muted blue
+    BLUE_GLOW = (90, 120, 160)       # Dimmer glow
+    GREEN_SOFT = (80, 140, 110)      # Softer green
+    AMBER_SOFT = (180, 150, 85)      # Muted amber
+    RED_SOFT = (160, 85, 85)         # Softer red
+    PURPLE_SOFT = (130, 100, 150)    # Dimmer purple
+    CYAN_SOFT = (80, 140, 160)       # Muted cyan
 
-    # Clinical/Health colors
-    HEALTH_HR = (220, 100, 120)  # Heart rate - soft red
-    HEALTH_BP = (100, 140, 220)  # Blood pressure - soft blue
-    HEALTH_O2 = (100, 180, 140)  # Oxygen - soft green
-    HEALTH_TEMP = (220, 160, 100)  # Temperature - soft amber
+    # Clinical/Health colors (softer for ambient)
+    HEALTH_HR = (180, 90, 105)       # Softer heart rate red
+    HEALTH_BP = (85, 115, 180)       # Softer blood pressure blue
+    HEALTH_O2 = (85, 145, 115)       # Softer oxygen green
+    HEALTH_TEMP = (180, 135, 85)     # Softer temperature amber
 
-    # Status colors
-    STATUS_SUCCESS = (100, 180, 140)
-    STATUS_WARNING = (220, 180, 100)
-    STATUS_ERROR = (200, 100, 100)
-    STATUS_INFO = (100, 140, 200)
+    # Status colors (muted)
+    STATUS_SUCCESS = (85, 145, 115)
+    STATUS_WARNING = (180, 150, 85)
+    STATUS_ERROR = (160, 85, 85)
+    STATUS_INFO = (85, 115, 160)
 
-    # TeleBeam colors
-    TELEBEAM_TRUSTED = (100, 180, 140)  # Known contact - green
-    TELEBEAM_UNKNOWN = (220, 180, 100)  # Unknown - yellow
-    TELEBEAM_SPAM = (200, 100, 100)     # Likely spam - red
-    TELEBEAM_EMERGENCY = (220, 100, 100)  # Emergency - bright red
+    # TeleBeam colors (softer)
+    TELEBEAM_TRUSTED = (85, 145, 115)     # Known contact - soft green
+    TELEBEAM_UNKNOWN = (180, 150, 85)     # Unknown - soft yellow
+    TELEBEAM_SPAM = (160, 85, 85)         # Likely spam - soft red
+    TELEBEAM_EMERGENCY = (180, 90, 90)    # Emergency - softer red
 
-    # Transparency levels
-    ALPHA_SUBTLE = 40
-    ALPHA_MEDIUM = 100
-    ALPHA_VISIBLE = 160
+    # Transparency levels (reduced for softer appearance)
+    ALPHA_SUBTLE = 25         # Very subtle
+    ALPHA_MEDIUM = 70         # Medium (reduced from 100)
+    ALPHA_VISIBLE = 120       # Visible (reduced from 160)
     ALPHA_SOLID = 255
 
 

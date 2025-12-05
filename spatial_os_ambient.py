@@ -15,17 +15,17 @@ from core.ui.framework import (
 from core.weather import get_current_weather
 
 
-# Realm definitions
+# Realm definitions with emoji symbols
 REALMS = [
-    {"id": 1, "name": "Daily Flow", "icon": "1", "implemented": False},
-    {"id": 2, "name": "Clinical & Health", "icon": "2", "implemented": True},
-    {"id": 3, "name": "Learning", "icon": "3", "implemented": False},
-    {"id": 4, "name": "Transport", "icon": "4", "implemented": False},
-    {"id": 5, "name": "Wellness", "icon": "5", "implemented": False},
-    {"id": 6, "name": "Entertainment", "icon": "6", "implemented": False},
-    {"id": 7, "name": "Home Control", "icon": "7", "implemented": False},
-    {"id": 8, "name": "Security", "icon": "8", "implemented": False},
-    {"id": 9, "name": "TeleBeam", "icon": "9", "implemented": True},
+    {"id": 1, "name": "Daily Flow", "icon": "📅", "implemented": False},
+    {"id": 2, "name": "Clinical & Health", "icon": "🏥", "implemented": True},
+    {"id": 3, "name": "Learning", "icon": "📚", "implemented": False},
+    {"id": 4, "name": "Transport", "icon": "🚗", "implemented": False},
+    {"id": 5, "name": "Wellness", "icon": "🧘", "implemented": False},
+    {"id": 6, "name": "Entertainment", "icon": "🎬", "implemented": False},
+    {"id": 7, "name": "Home Control", "icon": "🏠", "implemented": False},
+    {"id": 8, "name": "Security", "icon": "🔒", "implemented": False},
+    {"id": 9, "name": "SignalBeam", "icon": "📡", "implemented": True},  # TeleBeam renamed to SignalBeam
 ]
 
 
@@ -84,7 +84,7 @@ class MotiBeamOS:
         self.weather_update_timer = 0
         self.weather_update_interval = 3600  # Update every 60 seconds (3600 frames at 60fps)
 
-        # TeleBeam notifications
+        # SignalBeam notifications (realm #9)
         self.telebeam_missed_calls = 0
         self.telebeam_new_message = False
 
@@ -245,45 +245,45 @@ class MotiBeamOS:
             self.draw_telebeam_notification()
 
     def draw_realm_orbs(self):
-        """Draw the 9 realm orbs"""
+        """Draw the 9 realm orbs with emoji symbols"""
         breath_val = self.breathing.get_value()
 
         for i, realm in enumerate(REALMS):
             pos = self.orb_positions[i]
             is_selected = (i == self.selected_realm)
 
-            # Orb appearance
+            # Orb appearance (MUCH softer glow)
             if is_selected:
                 orb_radius = 70
-                orb_color = Theme.BLUE_GLOW
-                glow_intensity = breath_val
+                orb_color = Theme.GRAY_MID  # Softer color for selected
+                glow_intensity = breath_val * 0.4  # Reduced intensity
             else:
                 orb_radius = 60
-                orb_color = Theme.GRAY_MID
-                glow_intensity = 0.3
+                orb_color = Theme.GRAY_DARK  # Even darker for unselected
+                glow_intensity = 0.15  # Very subtle glow
 
-            # Special coloring for TeleBeam with notifications
+            # Special coloring for SignalBeam with notifications
             if realm["id"] == 9 and (self.telebeam_missed_calls > 0 or self.telebeam_new_message):
                 orb_color = Theme.TELEBEAM_UNKNOWN
-                glow_intensity = breath_val * 0.8
+                glow_intensity = breath_val * 0.3  # Reduced from 0.8
 
-            # Draw orb with glow
+            # Draw orb with subtle glow
             draw_glow_circle(self.display, pos, orb_radius, orb_color, glow_intensity)
 
-            # Draw realm number
-            font = Fonts.get(Fonts.LARGE, bold=True)
-            draw_text_shadowed(self.display, realm["icon"], pos, font,
-                             Theme.WHITE, shadow_offset=4, center=True)
+            # Draw emoji symbol (larger for visibility)
+            emoji_font = Fonts.get(Fonts.LARGE + 10, bold=False)
+            draw_text_shadowed(self.display, realm["icon"], pos, emoji_font,
+                             Theme.WHITE, shadow_offset=3, center=True)
 
             # Draw realm name below orb
             name_y = pos[1] + orb_radius + 30
-            name_font = Fonts.get(Fonts.SMALL if not is_selected else Fonts.MEDIUM)
-            name_color = Theme.WHITE if is_selected else Theme.GRAY_LIGHT
+            name_font = Fonts.get(Fonts.SMALL - 2 if not is_selected else Fonts.SMALL + 4)
+            name_color = Theme.GRAY_LIGHT if is_selected else Theme.GRAY_DARK
 
             # Show "COMING SOON" for unimplemented realms
             if not realm["implemented"]:
                 display_name = f"{realm['name']}"
-                coming_soon_font = Fonts.get(Fonts.SMALL - 8)
+                coming_soon_font = Fonts.get(Fonts.SMALL - 10)
                 coming_surf = coming_soon_font.render("(Coming Soon)", True, Theme.GRAY_DARK)
                 coming_rect = coming_surf.get_rect(center=(pos[0], name_y + 40))
                 self.display.blit(coming_surf, coming_rect)
@@ -294,43 +294,43 @@ class MotiBeamOS:
                              name_font, name_color, shadow_offset=2, center=True)
 
     def draw_header(self):
-        """Draw header with time, date, weather"""
-        # Time (top left)
+        """Draw header with time, date, weather (softer colors)"""
+        # Time (top left) - softer color
         time_str = format_time()
         time_font = Fonts.get(Fonts.LARGE, bold=True)
         draw_text_shadowed(self.display, time_str, (50, 40),
-                         time_font, Theme.WHITE, shadow_offset=4)
+                         time_font, Theme.GRAY_LIGHT, shadow_offset=3)
 
-        # Date (below time)
+        # Date (below time) - even softer
         date_str = format_date()
-        date_font = Fonts.get(Fonts.SMALL)
-        draw_text_shadowed(self.display, date_str, (50, 130),
-                         date_font, Theme.GRAY_LIGHT, shadow_offset=2)
+        date_font = Fonts.get(Fonts.SMALL - 4)
+        draw_text_shadowed(self.display, date_str, (50, 125),
+                         date_font, Theme.GRAY_MID, shadow_offset=2)
 
-        # Weather (top right)
+        # Weather (top right) - softer
         if not self.privacy_mode:
-            weather_font = Fonts.get(Fonts.MEDIUM, bold=True)
+            weather_font = Fonts.get(Fonts.MEDIUM, bold=False)
             weather_str = f"{self.weather_temp} {self.weather_condition}"
-            weather_surf = weather_font.render(weather_str, True, Theme.WHITE)
-            weather_rect = weather_surf.get_rect(topright=(self.width - 50, 40))
+            weather_surf = weather_font.render(weather_str, True, Theme.GRAY_LIGHT)
+            weather_rect = weather_surf.get_rect(topright=(self.width - 50, 45))
 
             # Shadow
             shadow_surf = weather_font.render(weather_str, True, (0, 0, 0))
-            shadow_rect = shadow_surf.get_rect(topright=(self.width - 47, 43))
+            shadow_rect = shadow_surf.get_rect(topright=(self.width - 47, 48))
             self.display.blit(shadow_surf, shadow_rect)
             self.display.blit(weather_surf, weather_rect)
 
             # Location
-            location_font = Fonts.get(Fonts.SMALL)
-            location_surf = location_font.render(self.weather_location, True, Theme.GRAY_LIGHT)
+            location_font = Fonts.get(Fonts.SMALL - 4)
+            location_surf = location_font.render(self.weather_location, True, Theme.GRAY_MID)
             location_rect = location_surf.get_rect(topright=(self.width - 50, 110))
             self.display.blit(location_surf, location_rect)
 
-        # Title (top center)
-        title_font = Fonts.get(Fonts.HUGE, bold=True)
-        title_color = Theme.BLUE_SOFT
-        draw_text_shadowed(self.display, "MOTIBEAM", (self.width // 2, 50),
-                         title_font, title_color, shadow_offset=5, center=True)
+        # Title (top center) - softer, more subtle
+        title_font = Fonts.get(Fonts.LARGE + 20, bold=True)
+        title_color = Theme.GRAY_MID  # Much softer title
+        draw_text_shadowed(self.display, "MOTIBEAM", (self.width // 2, 55),
+                         title_font, title_color, shadow_offset=4, center=True)
 
     def draw_privacy_indicator(self):
         """Draw privacy mode overlay"""
@@ -366,24 +366,24 @@ class MotiBeamOS:
         self.display.blit(text_surf, text_rect)
 
     def draw_telebeam_notification(self):
-        """Draw TeleBeam notification badge on realm #9"""
-        # Find TeleBeam orb position
-        telebeam_index = 8  # Realm #9 is index 8
-        pos = self.orb_positions[telebeam_index]
+        """Draw SignalBeam notification badge on realm #9"""
+        # Find SignalBeam orb position (realm #9)
+        signalbeam_index = 8  # Realm #9 is index 8
+        pos = self.orb_positions[signalbeam_index]
 
         # Badge position (top-right of orb)
         badge_x = pos[0] + 50
         badge_y = pos[1] - 50
-        badge_radius = 20
+        badge_radius = 18  # Slightly smaller
 
-        # Draw badge
+        # Draw badge with softer glow
         breath_val = self.breathing.get_value()
         draw_glow_circle(self.display, (badge_x, badge_y), badge_radius,
-                        Theme.TELEBEAM_UNKNOWN, breath_val)
+                        Theme.TELEBEAM_UNKNOWN, breath_val * 0.4)  # Softer glow
 
         # Badge number
         if self.telebeam_missed_calls > 0:
-            badge_font = Fonts.get(Fonts.SMALL - 8, bold=True)
+            badge_font = Fonts.get(Fonts.SMALL - 10, bold=True)
             badge_text = str(min(self.telebeam_missed_calls, 9))
             if self.telebeam_missed_calls > 9:
                 badge_text = "9+"
