@@ -10,29 +10,157 @@ from typing import Tuple, List, Optional
 from datetime import datetime
 
 
-# ULTRA-SOFT AMBIENT THEME (PROJECTION OPTIMIZED)
+# THEME PRESETS - Multiple visual styles
+class ThemePreset:
+    """Different color themes for homescreen"""
+
+    @staticmethod
+    def get_theme(preset_name: str):
+        """Get theme by name"""
+        themes = {
+            "ambient": ThemePreset.ambient(),
+            "bright": ThemePreset.bright(),
+            "warm": ThemePreset.warm(),
+            "cool": ThemePreset.cool(),
+        }
+        return themes.get(preset_name, themes["ambient"])
+
+    @staticmethod
+    def ambient():
+        """Ultra-soft ambient theme (default)"""
+        return {
+            # Background
+            "BG_DEEP": (5, 8, 12),
+            "BG_DARK": (10, 15, 20),
+            "BG_MID": (20, 28, 35),
+
+            # Text - BRIGHTENED for better readability
+            "WHITE": (240, 245, 250),         # Brighter white for info
+            "GRAY_LIGHT": (200, 205, 215),    # Brighter for readability
+            "GRAY_MID": (140, 145, 155),      # Brighter mid gray
+            "GRAY_DARK": (70, 75, 85),        # For subtle elements
+
+            # Accent colors
+            "BLUE_SOFT": (100, 130, 170),
+            "BLUE_GLOW": (110, 140, 180),
+            "GREEN_SOFT": (100, 160, 130),
+            "AMBER_SOFT": (200, 170, 105),
+            "CYAN_SOFT": (100, 160, 180),
+        }
+
+    @staticmethod
+    def bright():
+        """Brighter theme for high ambient light"""
+        return {
+            "BG_DEEP": (15, 20, 28),
+            "BG_DARK": (25, 32, 40),
+            "BG_MID": (40, 48, 60),
+
+            "WHITE": (255, 255, 255),
+            "GRAY_LIGHT": (220, 225, 235),
+            "GRAY_MID": (180, 185, 195),
+            "GRAY_DARK": (120, 125, 135),
+
+            "BLUE_SOFT": (120, 160, 220),
+            "BLUE_GLOW": (140, 180, 240),
+            "GREEN_SOFT": (120, 200, 160),
+            "AMBER_SOFT": (240, 200, 120),
+            "CYAN_SOFT": (120, 200, 220),
+        }
+
+    @staticmethod
+    def warm():
+        """Warm amber/orange tones"""
+        return {
+            "BG_DEEP": (12, 8, 5),
+            "BG_DARK": (20, 15, 10),
+            "BG_MID": (35, 28, 20),
+
+            "WHITE": (250, 240, 230),
+            "GRAY_LIGHT": (220, 200, 180),
+            "GRAY_MID": (160, 140, 120),
+            "GRAY_DARK": (80, 70, 60),
+
+            "BLUE_SOFT": (140, 120, 100),
+            "BLUE_GLOW": (160, 140, 120),
+            "GREEN_SOFT": (140, 160, 100),
+            "AMBER_SOFT": (220, 180, 100),
+            "CYAN_SOFT": (140, 150, 120),
+        }
+
+    @staticmethod
+    def cool():
+        """Cool blue/cyan tones"""
+        return {
+            "BG_DEEP": (5, 10, 15),
+            "BG_DARK": (10, 18, 25),
+            "BG_MID": (20, 32, 42),
+
+            "WHITE": (230, 240, 250),
+            "GRAY_LIGHT": (180, 200, 220),
+            "GRAY_MID": (120, 140, 160),
+            "GRAY_DARK": (60, 75, 90),
+
+            "BLUE_SOFT": (80, 130, 180),
+            "BLUE_GLOW": (100, 150, 200),
+            "GREEN_SOFT": (80, 160, 150),
+            "AMBER_SOFT": (150, 170, 180),
+            "CYAN_SOFT": (80, 170, 200),
+        }
+
+
+# ACTIVE THEME (can be swapped at runtime)
 class Theme:
     """Projection-friendly color palette - soft, readable from 10-15ft"""
+
+    # Current theme name
+    current_theme = "ambient"
+
+    @classmethod
+    def load_theme(cls, preset_name: str):
+        """Load a theme preset"""
+        cls.current_theme = preset_name
+        theme_data = ThemePreset.get_theme(preset_name)
+
+        # Background
+        cls.BG_DEEP = theme_data["BG_DEEP"]
+        cls.BG_DARK = theme_data["BG_DARK"]
+        cls.BG_MID = theme_data["BG_MID"]
+
+        # Text colors
+        cls.WHITE = theme_data["WHITE"]
+        cls.GRAY_LIGHT = theme_data["GRAY_LIGHT"]
+        cls.GRAY_MID = theme_data["GRAY_MID"]
+        cls.GRAY_DARK = theme_data["GRAY_DARK"]
+
+        # Accent colors
+        cls.BLUE_SOFT = theme_data["BLUE_SOFT"]
+        cls.BLUE_GLOW = theme_data["BLUE_GLOW"]
+        cls.GREEN_SOFT = theme_data["GREEN_SOFT"]
+        cls.AMBER_SOFT = theme_data["AMBER_SOFT"]
+        cls.CYAN_SOFT = theme_data["CYAN_SOFT"]
+        cls.RED_SOFT = (180, 100, 100)
+        cls.PURPLE_SOFT = (150, 120, 170)
 
     # Background (darker for better contrast)
     BG_DEEP = (5, 8, 12)
     BG_DARK = (10, 15, 20)
     BG_MID = (20, 28, 35)
 
-    # Soft whites and grays (less bright)
-    WHITE = (220, 225, 230)          # Softer white
-    GRAY_LIGHT = (160, 165, 175)     # Dimmer light gray
-    GRAY_MID = (100, 105, 115)       # Softer mid gray
-    GRAY_DARK = (50, 55, 65)         # Darker gray
+    # Text colors - BRIGHTENED for information
+    WHITE = (240, 245, 250)          # Brighter for readability
+    GRAY_LIGHT = (200, 205, 215)     # Brighter light gray
+    GRAY_MID = (140, 145, 155)       # Brighter mid gray
+    GRAY_DARK = (70, 75, 85)         # For subtle elements
 
     # Ultra-soft accent colors (VERY muted, cinematic)
-    BLUE_SOFT = (80, 110, 150)       # More muted blue
-    BLUE_GLOW = (90, 120, 160)       # Dimmer glow
-    GREEN_SOFT = (80, 140, 110)      # Softer green
-    AMBER_SOFT = (180, 150, 85)      # Muted amber
-    RED_SOFT = (160, 85, 85)         # Softer red
-    PURPLE_SOFT = (130, 100, 150)    # Dimmer purple
-    CYAN_SOFT = (80, 140, 160)       # Muted cyan
+    BLUE_SOFT = (100, 130, 170)      # Slightly brighter
+    BLUE_GLOW = (110, 140, 180)      # Slightly brighter
+    GREEN_SOFT = (100, 160, 130)     # Softer green
+    AMBER_SOFT = (200, 170, 105)     # Muted amber
+    RED_SOFT = (180, 100, 100)       # Softer red
+    PURPLE_SOFT = (150, 120, 170)    # Dimmer purple
+    CYAN_SOFT = (100, 160, 180)      # Muted cyan
 
     # Clinical/Health colors (softer for ambient)
     HEALTH_HR = (180, 90, 105)       # Softer heart rate red

@@ -8,7 +8,7 @@ import sys
 import math
 from typing import Optional
 from core.ui.framework import (
-    Theme, Fonts, draw_text_shadowed, draw_glow_circle,
+    Theme, ThemePreset, Fonts, draw_text_shadowed, draw_glow_circle,
     BreathingAnimation, ParticleSystem, ScrollingTicker,
     format_time, format_date
 )
@@ -158,6 +158,10 @@ class MotiBeamOS:
                     # Simulate missed call
                     self.telebeam_missed_calls += 1
 
+                # Theme switcher (T key)
+                elif event.key == pygame.K_t:
+                    self.cycle_theme()
+
     def launch_realm(self, realm_data: dict):
         """Launch selected realm"""
         if not realm_data["implemented"]:
@@ -190,6 +194,16 @@ class MotiBeamOS:
         continue_running = realm.run()
         if not continue_running:
             self.running = False
+
+    def cycle_theme(self):
+        """Cycle through available themes"""
+        themes = ["ambient", "bright", "warm", "cool"]
+        current_index = themes.index(Theme.current_theme)
+        next_index = (current_index + 1) % len(themes)
+        next_theme = themes[next_index]
+
+        Theme.load_theme(next_theme)
+        print(f"🎨 Theme switched to: {next_theme.upper()}")
 
     def update(self):
         """Update animations and state"""
@@ -275,17 +289,17 @@ class MotiBeamOS:
             draw_text_shadowed(self.display, realm["icon"], pos, emoji_font,
                              Theme.WHITE, shadow_offset=3, center=True)
 
-            # Draw realm name below orb
-            name_y = pos[1] + orb_radius + 30
-            name_font = Fonts.get(Fonts.SMALL - 2 if not is_selected else Fonts.SMALL + 4)
-            name_color = Theme.GRAY_LIGHT if is_selected else Theme.GRAY_DARK
+            # Draw realm name below orb (BRIGHTER for readability)
+            name_y = pos[1] + orb_radius + 35
+            name_font = Fonts.get(Fonts.SMALL - 4 if not is_selected else Fonts.SMALL + 2)
+            name_color = Theme.WHITE if is_selected else Theme.GRAY_LIGHT  # BRIGHTER
 
             # Show "COMING SOON" for unimplemented realms
             if not realm["implemented"]:
-                display_name = f"{realm['name']}"
-                coming_soon_font = Fonts.get(Fonts.SMALL - 10)
-                coming_surf = coming_soon_font.render("(Coming Soon)", True, Theme.GRAY_DARK)
-                coming_rect = coming_surf.get_rect(center=(pos[0], name_y + 40))
+                display_name = realm['name']
+                coming_soon_font = Fonts.get(Fonts.SMALL - 12)
+                coming_surf = coming_soon_font.render("(Coming Soon)", True, Theme.GRAY_MID)
+                coming_rect = coming_surf.get_rect(center=(pos[0], name_y + 38))
                 self.display.blit(coming_surf, coming_rect)
             else:
                 display_name = realm['name']
@@ -294,24 +308,24 @@ class MotiBeamOS:
                              name_font, name_color, shadow_offset=2, center=True)
 
     def draw_header(self):
-        """Draw header with time, date, weather (softer colors)"""
-        # Time (top left) - softer color
+        """Draw header with time, date, weather"""
+        # Time (top left) - soft for ambient feel
         time_str = format_time()
         time_font = Fonts.get(Fonts.LARGE, bold=True)
         draw_text_shadowed(self.display, time_str, (50, 40),
-                         time_font, Theme.GRAY_LIGHT, shadow_offset=3)
+                         time_font, Theme.GRAY_MID, shadow_offset=3)
 
-        # Date (below time) - even softer
+        # Date (below time) - soft
         date_str = format_date()
-        date_font = Fonts.get(Fonts.SMALL - 4)
+        date_font = Fonts.get(Fonts.SMALL - 6)
         draw_text_shadowed(self.display, date_str, (50, 125),
-                         date_font, Theme.GRAY_MID, shadow_offset=2)
+                         date_font, Theme.GRAY_DARK, shadow_offset=2)
 
-        # Weather (top right) - softer
+        # Weather (top right) - BRIGHTER for readability
         if not self.privacy_mode:
-            weather_font = Fonts.get(Fonts.MEDIUM, bold=False)
+            weather_font = Fonts.get(Fonts.MEDIUM, bold=True)
             weather_str = f"{self.weather_temp} {self.weather_condition}"
-            weather_surf = weather_font.render(weather_str, True, Theme.GRAY_LIGHT)
+            weather_surf = weather_font.render(weather_str, True, Theme.WHITE)  # BRIGHT
             weather_rect = weather_surf.get_rect(topright=(self.width - 50, 45))
 
             # Shadow
@@ -321,14 +335,14 @@ class MotiBeamOS:
             self.display.blit(weather_surf, weather_rect)
 
             # Location
-            location_font = Fonts.get(Fonts.SMALL - 4)
-            location_surf = location_font.render(self.weather_location, True, Theme.GRAY_MID)
+            location_font = Fonts.get(Fonts.SMALL - 6)
+            location_surf = location_font.render(self.weather_location, True, Theme.GRAY_LIGHT)
             location_rect = location_surf.get_rect(topright=(self.width - 50, 110))
             self.display.blit(location_surf, location_rect)
 
-        # Title (top center) - softer, more subtle
-        title_font = Fonts.get(Fonts.LARGE + 20, bold=True)
-        title_color = Theme.GRAY_MID  # Much softer title
+        # Title (top center) - BRIGHTER for visibility
+        title_font = Fonts.get(Fonts.LARGE + 18, bold=True)
+        title_color = Theme.GRAY_LIGHT  # BRIGHTER title
         draw_text_shadowed(self.display, "MOTIBEAM", (self.width // 2, 55),
                          title_font, title_color, shadow_offset=4, center=True)
 
