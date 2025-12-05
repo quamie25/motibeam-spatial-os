@@ -15,17 +15,17 @@ from core.ui.framework import (
 from core.weather import get_current_weather
 
 
-# Realm definitions with emoji symbols
+# Realm definitions with text symbols (Pi-compatible, no emoji fonts needed)
 REALMS = [
-    {"id": 1, "name": "Daily Flow", "icon": "📅", "implemented": False},
-    {"id": 2, "name": "Clinical & Health", "icon": "🏥", "implemented": True},
-    {"id": 3, "name": "Learning", "icon": "📚", "implemented": False},
-    {"id": 4, "name": "Transport", "icon": "🚗", "implemented": False},
-    {"id": 5, "name": "Wellness", "icon": "🧘", "implemented": False},
-    {"id": 6, "name": "Entertainment", "icon": "🎬", "implemented": False},
-    {"id": 7, "name": "Home Control", "icon": "🏠", "implemented": False},
-    {"id": 8, "name": "Security", "icon": "🔒", "implemented": False},
-    {"id": 9, "name": "SignalBeam", "icon": "📡", "implemented": True},  # TeleBeam renamed to SignalBeam
+    {"id": 1, "name": "Daily Flow", "icon": "◐", "implemented": False},  # Day/night symbol
+    {"id": 2, "name": "Clinical & Health", "icon": "+", "implemented": True},  # Medical cross
+    {"id": 3, "name": "Learning", "icon": "◆", "implemented": False},  # Knowledge diamond
+    {"id": 4, "name": "Transport", "icon": "▶", "implemented": False},  # Forward movement
+    {"id": 5, "name": "Wellness", "icon": "◯", "implemented": False},  # Balance circle
+    {"id": 6, "name": "Entertainment", "icon": "▸", "implemented": False},  # Play symbol
+    {"id": 7, "name": "Home Control", "icon": "⌂", "implemented": False},  # House symbol
+    {"id": 8, "name": "Security", "icon": "◈", "implemented": False},  # Shield diamond
+    {"id": 9, "name": "SignalBeam", "icon": "◉", "implemented": True},  # Signal/broadcast circle
 ]
 
 
