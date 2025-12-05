@@ -40,13 +40,14 @@ COLORS = {
     'particle_glow': (80, 120, 160, 100), # Visible particle
 }
 
-# Realm definitions with LETTER PAIRS (no emoji issues)
+# Realm definitions with EMOJIS
 REALMS = [
     {
         'id': 1,
         'name': 'Home',
         'subtitle': 'Smart Home',
-        'icon': 'HO',
+        'emoji': '🏠',
+        'fallback': 'HO',
         'color': COLORS['accent_home'],
         'scene_file': 'scenes.home_realm'
     },
@@ -54,7 +55,8 @@ REALMS = [
         'id': 2,
         'name': 'Clinical',
         'subtitle': 'Health & Wellness',
-        'icon': 'CL',
+        'emoji': '🏥',
+        'fallback': 'CL',
         'color': COLORS['accent_health'],
         'scene_file': 'scenes.clinical_realm'
     },
@@ -62,7 +64,8 @@ REALMS = [
         'id': 3,
         'name': 'Education',
         'subtitle': 'Learning Hub',
-        'icon': 'ED',
+        'emoji': '📚',
+        'fallback': 'ED',
         'color': COLORS['accent_education'],
         'scene_file': 'scenes.education_realm'
     },
@@ -70,7 +73,8 @@ REALMS = [
         'id': 4,
         'name': 'Transport',
         'subtitle': 'Automotive HUD',
-        'icon': 'TR',
+        'emoji': '🚗',
+        'fallback': 'TR',
         'color': COLORS['accent_transport'],
         'scene_file': 'scenes.transport_realm'
     },
@@ -78,7 +82,8 @@ REALMS = [
         'id': 5,
         'name': 'Emergency',
         'subtitle': 'Crisis Response',
-        'icon': 'EM',
+        'emoji': '🚨',
+        'fallback': 'EM',
         'color': COLORS['accent_emergency'],
         'scene_file': 'scenes.emergency_realm'
     },
@@ -86,7 +91,8 @@ REALMS = [
         'id': 6,
         'name': 'Security',
         'subtitle': 'Surveillance',
-        'icon': 'SE',
+        'emoji': '🛡️',
+        'fallback': 'SE',
         'color': COLORS['accent_security'],
         'scene_file': 'scenes.security_realm'
     },
@@ -94,7 +100,8 @@ REALMS = [
         'id': 7,
         'name': 'Enterprise',
         'subtitle': 'Workspace',
-        'icon': 'EN',
+        'emoji': '🏢',
+        'fallback': 'EN',
         'color': COLORS['accent_enterprise'],
         'scene_file': 'scenes.enterprise_realm'
     },
@@ -102,7 +109,8 @@ REALMS = [
         'id': 8,
         'name': 'Aviation',
         'subtitle': 'Flight Systems',
-        'icon': 'AV',
+        'emoji': '✈️',
+        'fallback': 'AV',
         'color': COLORS['accent_aviation'],
         'scene_file': 'scenes.aviation_realm'
     },
@@ -110,7 +118,8 @@ REALMS = [
         'id': 9,
         'name': 'Maritime',
         'subtitle': 'Navigation',
-        'icon': 'MA',
+        'emoji': '⚓',
+        'fallback': 'MA',
         'color': COLORS['accent_maritime'],
         'scene_file': 'scenes.maritime_realm'
     }
@@ -170,18 +179,13 @@ class AmbientParticle:
 
 
 class ScrollingTicker:
-    """Large, bright scrolling ticker"""
+    """Simple, minimal scrolling ticker"""
     def __init__(self, width, height, font):
         self.width = width
         self.height = height
         self.font = font
-        self.messages = [
-            "Welcome to MotiBeam Spatial OS  •  ",
-            "Navigate: Arrow Keys or Numbers 1-9  •  ",
-            "Privacy Mode: Press P  •  ",
-            "Exit: Press ESC  •  "
-        ]
-        self.full_message = "".join(self.messages)
+        # Minimal, simple message
+        self.full_message = "MotiBeam Spatial OS  •  Press 1-9 to Select  •  "
         self.x_offset = width
         self.speed = 2
         self.text_surface = self.font.render(
@@ -238,12 +242,28 @@ class SpatialOS:
         # Fonts (elder-friendly, large sizes)
         self.font_title = pygame.font.SysFont('Arial', 64, bold=True)
         self.font_subtitle = pygame.font.SysFont('Arial', 28)
-        self.font_card_icon = pygame.font.SysFont('Arial', 80, bold=True)
         self.font_card_title = pygame.font.SysFont('Arial', 44, bold=True)
         self.font_card_subtitle = pygame.font.SysFont('Arial', 26)
         self.font_time = pygame.font.SysFont('Arial', 52, bold=True)
         self.font_date = pygame.font.SysFont('Arial', 26)
         self.font_ticker = pygame.font.SysFont('Arial', 32, bold=True)
+
+        # Try multiple emoji fonts for best compatibility
+        emoji_fonts = ['Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', 'Symbola', 'DejaVu Sans']
+        self.font_emoji = None
+        for font_name in emoji_fonts:
+            try:
+                self.font_emoji = pygame.font.SysFont(font_name, 72)
+                break
+            except:
+                continue
+
+        # Fallback to regular font if no emoji font found
+        if self.font_emoji is None:
+            self.font_emoji = pygame.font.SysFont('Arial', 72)
+
+        # Fallback font for letter pairs
+        self.font_card_icon = pygame.font.SysFont('Arial', 80, bold=True)
 
         # State
         self.selected_realm = 0
@@ -314,11 +334,25 @@ class SpatialOS:
 
         self.screen.blit(card_surf, (x, y))
 
-        # Letter pair icon (large, always visible)
-        icon_surf = self.font_card_icon.render(realm['icon'], True, realm['color'])
-        icon_x = x + (self.card_width - icon_surf.get_width()) // 2
-        icon_y = y + 20
-        self.screen.blit(icon_surf, (icon_x, icon_y))
+        # Try emoji first, fall back to letter pair if it fails
+        try:
+            emoji_surf = self.font_emoji.render(realm['emoji'], True, realm['color'])
+            # Check if emoji actually rendered (not just "?")
+            test_surf = self.font_emoji.render('?', True, realm['color'])
+            if emoji_surf.get_size() != test_surf.get_size():
+                # Emoji rendered successfully!
+                icon_x = x + (self.card_width - emoji_surf.get_width()) // 2
+                icon_y = y + 15
+                self.screen.blit(emoji_surf, (icon_x, icon_y))
+            else:
+                # Emoji rendered as "?", use fallback
+                raise Exception("Emoji not supported")
+        except:
+            # Use letter pair fallback
+            icon_surf = self.font_card_icon.render(realm['fallback'], True, realm['color'])
+            icon_x = x + (self.card_width - icon_surf.get_width()) // 2
+            icon_y = y + 20
+            self.screen.blit(icon_surf, (icon_x, icon_y))
 
         # Card title
         title_surf = self.font_card_title.render(realm['name'], True, COLORS['text_primary'])
@@ -339,9 +373,9 @@ class SpatialOS:
         title_x = (SCREEN_WIDTH - title_surf.get_width()) // 2
         self.screen.blit(title_surf, (title_x, 25))
 
-        # Subtitle
+        # Simple subtitle (minimal reading)
         subtitle_surf = self.font_subtitle.render(
-            "Select Realm  •  Navigate with Arrows",
+            "Select Realm",
             True,
             COLORS['text_secondary']
         )
@@ -368,16 +402,12 @@ class SpatialOS:
         self.screen.blit(weather_surf, (weather_x, 110))
 
     def draw_footer(self):
-        """Draw bottom status bar"""
-        # Privacy mode indicator
-        privacy_text = "Privacy: ON" if self.privacy_mode else "Privacy: OFF"
-        privacy_surf = self.font_date.render(privacy_text, True, COLORS['text_secondary'])
-        self.screen.blit(privacy_surf, (40, SCREEN_HEIGHT - 90))
-
-        # Mode indicator
-        mode_text = "Mode: NORMAL"
-        mode_surf = self.font_date.render(mode_text, True, COLORS['text_secondary'])
-        self.screen.blit(mode_surf, (40, SCREEN_HEIGHT - 60))
+        """Draw minimal bottom status"""
+        # Just privacy indicator (simple)
+        if self.privacy_mode:
+            privacy_text = "🔒 Privacy Mode"
+            privacy_surf = self.font_date.render(privacy_text, True, COLORS['text_secondary'])
+            self.screen.blit(privacy_surf, (40, SCREEN_HEIGHT - 80))
 
     def draw_background(self):
         """Draw dark living wall background"""
