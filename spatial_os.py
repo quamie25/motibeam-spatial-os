@@ -22,12 +22,12 @@ SCREEN_HEIGHT = DISPLAY_INFO.current_h
 COLORS = {
     'bg_deep': (5, 8, 12),                # Deep space black
     'bg_ambient': (12, 18, 25),           # Subtle ambient glow
-    'card_bg': (25, 35, 50, 220),         # Strong opaque card
-    'card_border': (60, 80, 110),         # Visible border
-    'card_selected': (100, 140, 180),     # Clear highlight
-    'text_primary': (220, 230, 245),      # Bright readable white
-    'text_secondary': (160, 180, 200),    # Visible gray-blue
-    'ticker_color': (180, 200, 220),      # Bright ticker
+    'card_bg': (30, 42, 60, 115),         # Brighter, 45% opacity for projection
+    'card_border': (80, 100, 130),        # More visible border
+    'card_selected': (120, 160, 200),     # Brighter highlight
+    'text_primary': (255, 255, 255),      # Full white text
+    'text_secondary': (200, 215, 235),    # Brighter secondary text
+    'ticker_color': (220, 235, 250),      # High contrast ticker
     'accent_home': (80, 160, 200),        # Brighter cyan
     'accent_health': (80, 180, 140),      # Brighter green
     'accent_education': (140, 100, 200),  # Brighter purple
@@ -37,10 +37,11 @@ COLORS = {
     'accent_enterprise': (140, 150, 160), # Brighter gray
     'accent_aviation': (100, 160, 220),   # Brighter sky blue
     'accent_maritime': (80, 170, 180),    # Brighter teal
-    'particle_glow': (80, 120, 160, 100), # Visible particle
+    'particle_glow': (120, 160, 200, 150), # BRIGHTER particles (Option C)
     'badge_bg': (220, 90, 90, 200),       # Notification badge background
     'badge_text': (255, 255, 255),        # Badge text
-    'number_badge': (140, 160, 180, 180), # Soft number badge
+    'number_badge': (140, 160, 180, 200), # Brighter number badge
+    'emoji_glow': (200, 220, 255, 100),   # Glow behind emojis
 }
 
 # Realm definitions with EMOJIS
@@ -130,13 +131,13 @@ REALMS = [
 
 
 class AmbientParticle:
-    """Glowing particle for living wall background"""
+    """Glowing particle for living wall background - BRIGHTER for Option C"""
     def __init__(self, width, height):
         self.x = random.randint(0, width)
         self.y = random.randint(0, height)
-        self.speed = random.uniform(0.2, 0.5)
-        self.size = random.randint(2, 5)
-        self.opacity = random.randint(60, 120)
+        self.speed = random.uniform(0.3, 0.7)
+        self.size = random.randint(3, 7)      # Larger particles
+        self.opacity = random.randint(100, 180) # Much brighter
         self.direction = random.uniform(0, 2 * math.pi)
         self.pulse_offset = random.uniform(0, math.pi * 2)
 
@@ -155,10 +156,10 @@ class AmbientParticle:
             self.y = 0
 
     def draw(self, surface, time_pulse):
-        # Pulsing glow effect
+        # Pulsing glow effect - BRIGHTER
         pulse = math.sin(time_pulse * 0.02 + self.pulse_offset)
-        current_opacity = int(self.opacity + 30 * pulse)
-        current_opacity = max(40, min(150, current_opacity))
+        current_opacity = int(self.opacity + 40 * pulse)
+        current_opacity = max(80, min(220, current_opacity))  # Much brighter range
 
         color = (
             COLORS['particle_glow'][0],
@@ -198,7 +199,7 @@ class ScrollingTicker:
         ]
         self.full_message = "  •  ".join(self.messages) + "  •  "
         self.x_offset = width
-        self.speed = 2.5
+        self.speed = 1.8  # Slower scroll for readability
         self.text_surface = self.font.render(
             self.full_message,
             True,
@@ -223,12 +224,21 @@ class ScrollingTicker:
 
 
 class WeatherDisplay:
-    """Simulated weather display"""
+    """Simulated weather display with icon"""
     def __init__(self):
         self.location = "Cypress, TX"
         self.temp = 72
         self.condition = "Clear"
         self.last_update = datetime.now()
+        self.weather_icons = {
+            'Clear': '☀️',
+            'Sunny': '☀️',
+            'Cloudy': '☁️',
+            'Partly Cloudy': '⛅',
+            'Rain': '🌧️',
+            'Snow': '❄️',
+            'Storm': '⛈️'
+        }
 
     def update(self):
         now = datetime.now()
@@ -236,8 +246,12 @@ class WeatherDisplay:
             self.temp += random.choice([-1, 0, 0, 1])
             self.last_update = now
 
+    def get_icon(self):
+        return self.weather_icons.get(self.condition, '☀️')
+
     def get_display_text(self):
-        return f"{self.location}  •  {self.temp}°F  •  {self.condition}"
+        icon = self.get_icon()
+        return f"{icon} {self.temp}°F  •  {self.location}"
 
 
 class SpatialOS:
@@ -261,22 +275,22 @@ class SpatialOS:
         self.font_badge = pygame.font.SysFont('Arial', 20, bold=True)   # Number badges
         self.font_notification = pygame.font.SysFont('Arial', 18, bold=True)  # Notification count
 
-        # Try multiple emoji fonts for best compatibility
+        # Try multiple emoji fonts for best compatibility - LARGER (20% increase)
         emoji_fonts = ['Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', 'Symbola', 'DejaVu Sans']
         self.font_emoji = None
         for font_name in emoji_fonts:
             try:
-                self.font_emoji = pygame.font.SysFont(font_name, 72)
+                self.font_emoji = pygame.font.SysFont(font_name, 86)  # 72 * 1.2 = ~86
                 break
             except:
                 continue
 
         # Fallback to regular font if no emoji font found
         if self.font_emoji is None:
-            self.font_emoji = pygame.font.SysFont('Arial', 72)
+            self.font_emoji = pygame.font.SysFont('Arial', 86)
 
-        # Fallback font for letter pairs
-        self.font_card_icon = pygame.font.SysFont('Arial', 80, bold=True)
+        # Fallback font for letter pairs (also larger)
+        self.font_card_icon = pygame.font.SysFont('Arial', 96, bold=True)
 
         # State
         self.selected_realm = 0
@@ -353,24 +367,45 @@ class SpatialOS:
 
         self.screen.blit(card_surf, (x, y))
 
-        # Try emoji first, fall back to letter pair if it fails
+        # Try emoji first with GLOW, fall back to letter pair if it fails
         try:
             emoji_surf = self.font_emoji.render(realm['emoji'], True, realm['color'])
             # Check if emoji actually rendered (not just "?")
             test_surf = self.font_emoji.render('?', True, realm['color'])
             if emoji_surf.get_size() != test_surf.get_size():
-                # Emoji rendered successfully!
+                # Emoji rendered successfully! Add glow behind it
                 icon_x = x + (self.card_width - emoji_surf.get_width()) // 2
-                icon_y = y + 15
+                icon_y = y + 10
+
+                # Draw glow effect behind emoji
+                glow_size = 100
+                glow_surf = pygame.Surface((glow_size, glow_size), pygame.SRCALPHA)
+                pygame.draw.circle(glow_surf, COLORS['emoji_glow'],
+                                 (glow_size//2, glow_size//2), glow_size//2)
+                glow_x = x + (self.card_width - glow_size) // 2
+                glow_y = y + 15
+                self.screen.blit(glow_surf, (glow_x, glow_y))
+
+                # Draw emoji on top of glow
                 self.screen.blit(emoji_surf, (icon_x, icon_y))
             else:
                 # Emoji rendered as "?", use fallback
                 raise Exception("Emoji not supported")
         except:
-            # Use letter pair fallback
+            # Use letter pair fallback with glow
             icon_surf = self.font_card_icon.render(realm['fallback'], True, realm['color'])
             icon_x = x + (self.card_width - icon_surf.get_width()) // 2
-            icon_y = y + 20
+            icon_y = y + 15
+
+            # Add glow for letter pairs too
+            glow_size = 100
+            glow_surf = pygame.Surface((glow_size, glow_size), pygame.SRCALPHA)
+            pygame.draw.circle(glow_surf, COLORS['emoji_glow'],
+                             (glow_size//2, glow_size//2), glow_size//2)
+            glow_x = x + (self.card_width - glow_size) // 2
+            glow_y = y + 20
+            self.screen.blit(glow_surf, (glow_x, glow_y))
+
             self.screen.blit(icon_surf, (icon_x, icon_y))
 
         # Card title
@@ -451,17 +486,17 @@ class SpatialOS:
         self.screen.blit(weather_surf, (weather_x, 110))
 
     def draw_footer(self):
-        """Draw bottom status with always-visible privacy indicator"""
-        # Privacy indicator (always visible)
+        """Draw bottom status with icon-only privacy indicator"""
+        # Privacy indicator - ICON ONLY (no text)
         if self.privacy_mode:
-            privacy_text = "🔒 Privacy: ON"
-            privacy_color = (120, 200, 120)  # Green when ON
+            privacy_icon = "🔒"
+            privacy_color = (150, 255, 150)  # Bright green when ON
         else:
-            privacy_text = "🔓 Privacy: OFF"
+            privacy_icon = "🔓"
             privacy_color = COLORS['text_secondary']
 
-        privacy_surf = self.font_date.render(privacy_text, True, privacy_color)
-        self.screen.blit(privacy_surf, (40, SCREEN_HEIGHT - 90))
+        privacy_surf = self.font_time.render(privacy_icon, True, privacy_color)
+        self.screen.blit(privacy_surf, (40, SCREEN_HEIGHT - 100))
 
     def draw_background(self):
         """Draw dark living wall background"""
