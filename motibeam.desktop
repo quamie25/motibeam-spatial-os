@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=MotiBeam Spatial OS
+Comment=Ambient Computing Interface
+Exec=/home/motibeam/motibeam-spatial-os/launch_motibeam.sh
+Terminal=false
+StartupNotify=false
+X-GNOME-Autostart-enabled=true

@@ -1,0 +1,18 @@
+[Unit]
+Description=MotiBeam Spatial OS - Ambient Computing Interface
+After=graphical.target
+
+[Service]
+Type=simple
+User=motibeam
+Group=motibeam
+Environment="DISPLAY=:0"
+Environment="XAUTHORITY=/home/motibeam/.Xauthority"
+WorkingDirectory=/home/motibeam/motibeam-spatial-os
+ExecStartPre=/bin/sleep 5
+ExecStart=/usr/bin/python3 /home/motibeam/motibeam-spatial-os/spatial_os_ambient.py
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=graphical.target
