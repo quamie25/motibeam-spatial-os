@@ -38,6 +38,9 @@ COLORS = {
     'accent_aviation': (100, 160, 220),   # Brighter sky blue
     'accent_maritime': (80, 170, 180),    # Brighter teal
     'particle_glow': (80, 120, 160, 100), # Visible particle
+    'badge_bg': (220, 90, 90, 200),       # Notification badge background
+    'badge_text': (255, 255, 255),        # Badge text
+    'number_badge': (140, 160, 180, 180), # Soft number badge
 }
 
 # Realm definitions with EMOJIS
@@ -179,15 +182,23 @@ class AmbientParticle:
 
 
 class ScrollingTicker:
-    """Simple, minimal scrolling ticker"""
+    """Dynamic, intelligent scrolling ticker"""
     def __init__(self, width, height, font):
         self.width = width
         self.height = height
         self.font = font
-        # Minimal, simple message
-        self.full_message = "MotiBeam Spatial OS  •  Press 1-9 to Select  •  "
+        # Dynamic contextual alerts
+        self.messages = [
+            "Clinical: BP check at 3:00 PM",
+            "TeleBeam: 2 missed calls",
+            "Home: Package delivered",
+            "Focus: Review medications",
+            "Security: All systems normal",
+            "Press 1-9 to select realm"
+        ]
+        self.full_message = "  •  ".join(self.messages) + "  •  "
         self.x_offset = width
-        self.speed = 2
+        self.speed = 2.5
         self.text_surface = self.font.render(
             self.full_message,
             True,
@@ -246,7 +257,9 @@ class SpatialOS:
         self.font_card_subtitle = pygame.font.SysFont('Arial', 26)
         self.font_time = pygame.font.SysFont('Arial', 52, bold=True)
         self.font_date = pygame.font.SysFont('Arial', 26)
-        self.font_ticker = pygame.font.SysFont('Arial', 32, bold=True)
+        self.font_ticker = pygame.font.SysFont('Arial', 36, bold=True)  # Larger ticker
+        self.font_badge = pygame.font.SysFont('Arial', 20, bold=True)   # Number badges
+        self.font_notification = pygame.font.SysFont('Arial', 18, bold=True)  # Notification count
 
         # Try multiple emoji fonts for best compatibility
         emoji_fonts = ['Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', 'Symbola', 'DejaVu Sans']
@@ -281,6 +294,12 @@ class SpatialOS:
 
         # Weather
         self.weather = WeatherDisplay()
+
+        # Notifications (simulated for now)
+        self.notifications = {
+            'home': 2,  # 2 missed calls/messages
+            'clinical': 1,  # 1 upcoming appointment
+        }
 
         # Card layout (better centered)
         self.card_width = 360
@@ -366,6 +385,36 @@ class SpatialOS:
         subtitle_y = y + 155
         self.screen.blit(subtitle_surf, (subtitle_x, subtitle_y))
 
+        # Number badge (bottom-right corner)
+        badge_number = str(index + 1)
+        badge_surf = pygame.Surface((32, 32), pygame.SRCALPHA)
+        pygame.draw.circle(badge_surf, COLORS['number_badge'], (16, 16), 16)
+        badge_text = self.font_badge.render(badge_number, True, COLORS['text_primary'])
+        badge_text_x = (32 - badge_text.get_width()) // 2
+        badge_text_y = (32 - badge_text.get_height()) // 2
+        badge_surf.blit(badge_text, (badge_text_x, badge_text_y))
+        self.screen.blit(badge_surf, (x + self.card_width - 40, y + self.card_height - 40))
+
+        # Notification badge (top-right corner) - only for specific realms
+        realm_key = realm['name'].lower()
+        if realm_key in self.notifications and self.notifications[realm_key] > 0:
+            notif_count = self.notifications[realm_key]
+            notif_surf = pygame.Surface((28, 28), pygame.SRCALPHA)
+
+            # Pulsing effect for notifications
+            pulse = math.sin(self.time_pulse * 0.08)
+            pulse_size = int(28 + 4 * pulse)
+            pulse_alpha = int(200 + 55 * pulse)
+
+            notif_color = (*COLORS['badge_bg'][:3], pulse_alpha)
+            pygame.draw.circle(notif_surf, notif_color, (14, 14), 14)
+
+            notif_text = self.font_notification.render(str(notif_count), True, COLORS['badge_text'])
+            notif_text_x = (28 - notif_text.get_width()) // 2
+            notif_text_y = (28 - notif_text.get_height()) // 2
+            notif_surf.blit(notif_text, (notif_text_x, notif_text_y))
+            self.screen.blit(notif_surf, (x + self.card_width - 35, y + 8))
+
     def draw_header(self):
         """Draw compact header"""
         # Title (moved up, more compact)
@@ -402,12 +451,17 @@ class SpatialOS:
         self.screen.blit(weather_surf, (weather_x, 110))
 
     def draw_footer(self):
-        """Draw minimal bottom status"""
-        # Just privacy indicator (simple)
+        """Draw bottom status with always-visible privacy indicator"""
+        # Privacy indicator (always visible)
         if self.privacy_mode:
-            privacy_text = "🔒 Privacy Mode"
-            privacy_surf = self.font_date.render(privacy_text, True, COLORS['text_secondary'])
-            self.screen.blit(privacy_surf, (40, SCREEN_HEIGHT - 80))
+            privacy_text = "🔒 Privacy: ON"
+            privacy_color = (120, 200, 120)  # Green when ON
+        else:
+            privacy_text = "🔓 Privacy: OFF"
+            privacy_color = COLORS['text_secondary']
+
+        privacy_surf = self.font_date.render(privacy_text, True, privacy_color)
+        self.screen.blit(privacy_surf, (40, SCREEN_HEIGHT - 90))
 
     def draw_background(self):
         """Draw dark living wall background"""
